@@ -9,23 +9,25 @@ library(tidyverse)
 ```
 
 
-# Read data
+# Explore district profile
 ```{r}
+# Read data
 district_profile_df <- read_csv("../data/district-profile-2024-2025.csv")
 
+# View summary
 district_profile_df |> summary()
 ```
 
 
-# Inspect and clean data
 ```{r}
-# Convert district_no to char
+# Convert district_no to factor
 district_profile_df <- district_profile_df |> 
     mutate(district_no = factor(district_no))
 ```
 
 
 ```{r}
+# Verify unique district numbers
 district_profile_df |> distinct(district_no)
 ```
 
@@ -40,3 +42,86 @@ district_profile_df |> filter(district_no == 0)
 # Percentage columns contain non-numeric values: "Less than 1%", "Fewer than 10 students", "More than 99%"
 district_profile_df |> distinct(hawaiian_pacisld_pct) |> arrange(factor(hawaiian_pacisld_pct))
 ```
+
+
+# Explore district discipline
+```{r}
+# Read data
+district_discipline_df <- read_csv("../data/discipline-district-2425.csv")
+
+# View summary
+district_discipline_df |> summary()
+```
+
+
+```{r}
+# Convert District to factor
+district_discipline_df <- district_discipline_df |> 
+    mutate(District = factor(District))
+```
+
+
+```{r}
+# Count and percent columns contain non-numeric values: "Less than 1%", "Fewer than 10 students"
+district_discipline_df |> distinct(`Students Iss`) |> arrange(desc(`Students Iss`))
+```
+
+
+# Explore school discipline
+```{r}
+# Read data
+school_discipline_df <- read_csv("../data/discipline-school-2425.csv")
+
+# View summary
+school_discipline_df |> summary()
+```
+
+
+```{r}
+# Convert District and School to factor
+school_discipline_df <- school_discipline_df |> 
+    mutate(District = factor(District)) |> 
+    mutate(School = factor(School))
+```
+
+
+```{r}
+# Does not contain district 0 for State of TN
+# Duplicates in School and School Name (separate districts)
+# Count and percent columns contain non-numeric values: "Fewer than 10 students", "Less than 1%", "Less than 5%"
+school_discipline_df |> distinct(`Percent Disciplined`) |> arrange(desc(`Percent Disciplined`))
+```
+
+
+# Explore state chronic absenteeism suppressed
+```{r}
+# Read data
+state_chronic_absenteeism_suppressed_df <- read_csv("../data/state_chronic_absenteeism_suppressed_2025.csv")
+
+# View summary
+state_chronic_absenteeism_suppressed_df |> summary()
+```
+
+
+```{r}
+# No non-numeric values in count or percentage columns
+state_chronic_absenteeism_suppressed_df |> distinct(n_chronically_absent) |> arrange(n_chronically_absent)
+```
+
+
+# Explore district chronic absenteeism suppressed
+```{r}
+# Read data
+district_chronic_absenteeism_suppressed_df <- read_csv("../data/district_chronic_absenteeism_suppressed_2025.csv")
+
+# View summary
+district_chronic_absenteeism_suppressed_df |> summary()
+```
+
+
+```{r}
+# I think "system" is the same as "district"
+# n_chronically_absent and pct_chronically_absent contains non-numeric values: "<10 students", "<1%"
+district_chronic_absenteeism_suppressed_df |> distinct(pct_chronically_absent) |> arrange(desc(pct_chronically_absent))
+```
+
