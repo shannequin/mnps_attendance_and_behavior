@@ -1,0 +1,42 @@
+---
+title: "data_exploration"
+output: html_document
+---
+
+
+```{r}
+library(tidyverse)
+```
+
+
+# Read data
+```{r}
+district_profile_df <- read_csv("../data/district-profile-2024-2025.csv")
+
+district_profile_df |> summary()
+```
+
+
+# Inspect and clean data
+```{r}
+# Convert district_no to char
+district_profile_df <- district_profile_df |> 
+    mutate(district_no = factor(district_no))
+```
+
+
+```{r}
+district_profile_df |> distinct(district_no)
+```
+
+
+```{r}
+# district_no 0 State of Tennessee
+district_profile_df |> filter(district_no == 0)
+```
+
+
+```{r}
+# Percentage columns contain non-numeric values: "Less than 1%", "Fewer than 10 students", "More than 99%"
+district_profile_df |> distinct(hawaiian_pacisld_pct) |> arrange(factor(hawaiian_pacisld_pct))
+```
