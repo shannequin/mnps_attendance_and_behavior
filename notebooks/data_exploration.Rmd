@@ -40,7 +40,31 @@ district_profile_df |> filter(district_no == 0)
 
 ```{r}
 # Percentage columns contain non-numeric values: "Less than 1%", "Fewer than 10 students", "More than 99%"
-district_profile_df |> distinct(hawaiian_pacisld_pct) |> arrange(factor(hawaiian_pacisld_pct))
+district_profile_df |> distinct(hawaiian_pacisld_pct) |> arrange(hawaiian_pacisld_pct)
+```
+
+
+# Explore school profile
+```{r}
+# Read data
+school_profile_df <- read_csv("../data/school-profile-2024-2025.csv")
+
+# View summary
+school_profile_df |> summary()
+```
+
+
+```{r}
+# Convert district_no and school_no to factor
+school_profile_df <- school_profile_df |> 
+    mutate(district_no = factor(district_no)) |> 
+    mutate(school_no = factor(school_no))
+```
+
+
+```{r}
+# Percentage columns contain non-numeric values: "Less than 5%", "Fewer than 10 students", "More than 95%"
+school_profile_df |> distinct(white_pct) |> arrange(desc(white_pct))
 ```
 
 
@@ -120,8 +144,121 @@ district_chronic_absenteeism_suppressed_df |> summary()
 
 
 ```{r}
+# Convert system to factor
+district_chronic_absenteeism_suppressed_df <- district_chronic_absenteeism_suppressed_df |> 
+    mutate(system = factor(system))
+```
+
+
+```{r}
 # I think "system" is the same as "district"
 # n_chronically_absent and pct_chronically_absent contains non-numeric values: "<10 students", "<1%"
 district_chronic_absenteeism_suppressed_df |> distinct(pct_chronically_absent) |> arrange(desc(pct_chronically_absent))
+```
+
+
+# Explore school chronic absenteeism suppressed
+```{r}
+# Read data
+school_chronic_absenteeism_suppressed_df <- read_csv("../data/school_chronic_absenteeism_suppressed_2025.csv")
+
+# View summary
+school_chronic_absenteeism_suppressed_df |> summary()
+```
+
+
+```{r}
+# Convert system and school to factor
+school_chronic_absenteeism_suppressed_df <- school_chronic_absenteeism_suppressed_df |> 
+    mutate(system = factor(system)) |> 
+    mutate(system = factor(school))
+```
+
+
+```{r}
+# I think "system" is the same as "district"
+# n_chronically_absent contains non-numeric values: "<10 students", "<5%", ">95%"
+school_chronic_absenteeism_suppressed_df |> distinct(n_chronically_absent) |> arrange(desc(n_chronically_absent))
+```
+
+
+# Explore MNPS enrollment data
+```{r}
+# Read data
+mnps_enrollment_df <- read_csv("../data/MNPS Enrollment Data 031025.csv")
+
+# View summary
+mnps_enrollment_df |> summary()
+```
+
+
+```{r}
+# Convert School ID and Zip Code to factor
+mnps_enrollment_df <- mnps_enrollment_df |> 
+    mutate(`School ID` = factor(`School ID`)) |> 
+    mutate(`Zip Code` = factor(`Zip Code`))
+```
+
+
+```{r}
+# Ignore `School Level` value "Adult"? Verify 149 districts
+mnps_enrollment_df |> distinct(`School Level`) |> arrange(desc(`School Level`))
+```
+
+
+```{r}
+# Grade columns contains non-numeric values: "%", "< 10", "< 5%", "> 95%"
+mnps_enrollment_df |> distinct(`Black or African American`) |> arrange(desc(`Black or African American`))
+```
+
+
+# Explore MNPS behavior data
+```{r}
+# Read data
+mnps_behavior_df <- read_csv("../data/MNPS Behavior Data 031025.csv")
+
+# View summary
+mnps_behavior_df |> summary()
+```
+
+
+```{r}
+# Ignore SCHOOL column value *DISTRICT? Maybe reconcile with state and district data
+mnps_behavior_df |> filter(SCHOOL == "*DISTRICT")
+```
+
+
+```{r}
+# Numeric columns contain non-numeric values: "%", < 10", "< 5%", "> 95%"
+mnps_behavior_df |> distinct(Remandment, .keep_all = TRUE)
+```
+
+
+# Explore MNPS attendance data
+```{r}
+# Read data
+mnps_attendance_df <- read_csv("../data/MNPS Attendance Data 031025.csv")
+
+# View summary
+mnps_attendance_df |> summary()
+```
+
+
+```{r}
+# Convert SchoolID to factor
+mnps_attendance_df <- mnps_attendance_df |> 
+    mutate(SchoolID = factor(SchoolID))
+```
+
+
+```{r}
+# Ignore SchoolName column value *DISTRICT? Maybe reconcile with state and district data
+mnps_attendance_df |> filter(SchoolName == "*DISTRICT")
+```
+
+
+```{r}
+# Numeric columns contain non-numeric values: "%", < 10", "< 5%"
+mnps_attendance_df |> distinct(ChronicallyAbsentPercent) |> arrange(desc(ChronicallyAbsentPercent))
 ```
 
