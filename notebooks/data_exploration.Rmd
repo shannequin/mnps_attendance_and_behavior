@@ -7,7 +7,6 @@ output: html_document
 ```{r}
 library(tidyverse)
 library(janitor) # Cleans names of a data.frame
-library(patchwork) # Creates multifigure plot compositions
 ```
 
 
@@ -299,17 +298,6 @@ mnps_suspension_by_gender_display_df <- mnps_behavior_df |>
     rename(TOTAL_ENROLLMENT = TOTAL_SUBGROUP_ENROLLMENT, GENDER = DATA_VALUE)
 
 mnps_suspension_by_gender_display_df
-```
-
-
-```{r}
-# Create tibble for plotting suspension by gender
-mnps_suspension_by_gender_plot_df <- mnps_behavior_df |> 
-    filter(SCHOOL == "*DISTRICT" & SUBGROUP == "Gender") |> # Filter by district totals and gender
-    select(DATA_VALUE, TOTAL_SUBGROUP_ENROLLMENT, SUSPENSION) |> # Narrow down necessary columns
-    rename(GENDER = DATA_VALUE, TOTAL_ENROLLMENT = TOTAL_SUBGROUP_ENROLLMENT) # Rename coulumns
-
-mnps_suspension_by_gender_plot_df
 ```
 
 
