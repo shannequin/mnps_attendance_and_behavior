@@ -1,4 +1,5 @@
 library(shiny)
+library(DT)
 library(tidyverse)
 library(janitor) # Cleans names of a data.frame
 
@@ -20,7 +21,7 @@ mnps_behavior_df <- mnps_behavior_df |>
     mutate(REMANDMENT_PERCENT = as.double(str_replace(REMANDMENT_PERCENT, "%", "")), .after = REMANDMENT)
 
 # Set list of categories
-subgroup_list <- mnps_behavior_df |>
+mnps_subgroup_list <- mnps_behavior_df |>
     distinct(SUBGROUP) |> 
     pull() |> 
     sort()

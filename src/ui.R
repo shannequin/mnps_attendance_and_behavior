@@ -7,7 +7,6 @@
 #    https://shiny.posit.co/
 #
 
-library(shiny)
 
 # Define UI for application that draws a histogram
 fluidPage(
@@ -18,13 +17,15 @@ fluidPage(
     # Sidebar with a slider input for number of bins
     sidebarLayout(
         sidebarPanel(
-            selectInput("subgroup", "Select category:",
-                        choices = subgroup_list)
+            selectInput("mnps_subgroup", "Select category:",
+                        choices = mnps_subgroup_list,
+                        selected = "Gender")
             ),
 
         # Show a plot of the generated distribution
         mainPanel(
-            dataTableOutput("selectedTable")
+            DTOutput("mnps_table"),
+            plotOutput("mnps_plot") 
         )
     )
 )
