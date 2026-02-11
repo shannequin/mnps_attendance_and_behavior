@@ -2,6 +2,7 @@ library(shiny)
 library(DT)
 library(tidyverse)
 library(janitor) # Cleans names of a data.frame
+library(glue)
 
 # Read data
 mnps_behavior_df <- read_csv("../data/MNPS Behavior Data 031025.csv")
