@@ -1,4 +1,5 @@
 library(shiny)
+library(bslib)
 library(DT)
 library(tidyverse)
 library(janitor) # Cleans names of a data.frame

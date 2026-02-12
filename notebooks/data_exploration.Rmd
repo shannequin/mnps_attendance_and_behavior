@@ -7,6 +7,7 @@ output: html_document
 ```{r}
 library(tidyverse)
 library(janitor) # Cleans names of a data.frame
+library(scales)
 ```
 
 
@@ -213,7 +214,7 @@ mnps_enrollment_df |> distinct(`Black or African American`) |> arrange(desc(`Bla
 ```
 
 
-# Explore and clean MNPS behavior data
+# Explore MNPS behavior data
 ```{r}
 # Read data
 mnps_behavior_df <- read_csv("../data/MNPS Behavior Data 031025.csv")
@@ -224,14 +225,6 @@ mnps_behavior_df |> summary()
 
 
 ```{r}
-# Rename tibble columns with janitor
-mnps_behavior_df <- mnps_behavior_df |> 
-    clean_names("screaming_snake")
-```
-
-
-
-```{r}
 # Maybe reconcile with state and district data
 mnps_behavior_df |> filter(SCHOOL == "*DISTRICT")
 ```
@@ -239,7 +232,7 @@ mnps_behavior_df |> filter(SCHOOL == "*DISTRICT")
 
 ```{r}
 # Numeric columns contain non-numeric values: "%", < 10", "< 5%", "> 95%"
-mnps_behavior_df |> distinct(REMANDMENT, .keep_all = TRUE)
+mnps_behavior_df |> distinct(Remandment, .keep_all = TRUE)
 ```
 
 
@@ -272,7 +265,77 @@ mnps_attendance_df |> distinct(ChronicallyAbsentPercent) |> arrange(desc(Chronic
 ```
 
 
-# Work with MNPS Behavior Data
+# Format column names
+```{r}
+# Rename tibble columns with janitor
+mnps_enrollment_df <- mnps_enrollment_df |> 
+    clean_names("screaming_snake")
+
+mnps_enrollment_df |> colnames()
+```
+
+
+```{r}
+# Rename tibble columns with janitor
+mnps_behavior_df <- mnps_behavior_df |> 
+    clean_names("screaming_snake")
+
+mnps_behavior_df |> colnames()
+```
+
+
+```{r}
+# Rename tibble columns with janitor
+mnps_attendance_df <- mnps_attendance_df |> 
+    clean_names("screaming_snake")
+
+mnps_attendance_df |> colnames()
+```
+
+
+# Reconcile the total students
+```{r}
+# Verify the total number of students
+enrollment_total <- mnps_enrollment_df |> 
+    summarise(DISTRICT_TOTAL = sum(TOTAL_ENROLLMENT)) |> 
+    pull()
+
+enrollment_total
+```
+
+
+```{r}
+# Verify the total number of students
+behavior_total <- mnps_behavior_df |> 
+    filter(SCHOOL == "*DISTRICT" & SUBGROUP == "Gender") |> 
+    summarise(DISTRICT_TOTAL = sum(TOTAL_SUBGROUP_ENROLLMENT)) |> 
+    pull()
+
+behavior_total
+```
+
+
+```{r}
+# Verify the total number of students
+attendance_total <- mnps_attendance_df |> 
+    filter(SCHOOL_NAME == "*DISTRICT") |> 
+    select(ACTIVE_ENROLLMENT) |> 
+    pull()
+
+attendance_total
+```
+
+
+```{r}
+# Verify the total number of students
+mnps_attendance_df |> 
+    filter(SCHOOL_NAME != "*DISTRICT") |> 
+    summarize(TOTAL_STUDENTS = sum(ACTIVE_ENROLLMENT)) |> 
+    pull()
+```
+
+
+# Work with MNPS behavior data
 ```{r}
 # Clean MNPS behavior data
 mnps_behavior_df <- mnps_behavior_df |> 
@@ -287,7 +350,6 @@ mnps_behavior_df <- mnps_behavior_df |>
     
 mnps_behavior_df
 ```
-
 
 
 ```{r}
@@ -335,7 +397,8 @@ mnps_suspension_by_gender_plot <- mnps_suspension_by_gender_plot_df |>
          x = "Gender",
          y = "Number of Students",
          fill = NULL) +
-     scale_fill_hue(labels = c("SUSPENSION_COUNT" = "Suspended Students",
+    scale_y_continuous(labels = label_comma()) +
+    scale_fill_hue(labels = c("SUSPENSION_COUNT" = "Suspended Students",
                                "TOTAL_ENROLLMENT" = "Total Students"),
                     guide = guide_legend(reverse = TRUE)) + # Reverse order of legend labels
     # Display geom labels
@@ -354,5 +417,52 @@ ggsave(filename = "../plots/mnps_suspension_by_gender_plot.png", # Set path
        width = 5, # Set width
        height = 4, # Set height
        dpi = 300) # Set resolution
+```
+
+
+# Work with state chronic absenteeism data
+```{r}
+state_chronic_absenteeism_suppressed_df |> 
+    clean_names("screaming_snake") |> 
+    filter(STUDENT_GROUP %in% c("Male", "Female")) |> 
+    pivot_longer(
+        cols = c(N_STUDENTS, N_CHRONICALLY_ABSENT),
+        names_to = "COUNT_TYPE",
+        values_to = "COUNT"
+    ) |> 
+    select(STUDENT_GROUP, GRADE_BAND, COUNT_TYPE, COUNT, PCT_CHRONICALLY_ABSENT) |> 
+    ggplot(
+        aes(
+            x = factor(GRADE_BAND, levels = c("All Grades", "K through 8th", "9th through 12th")),
+            y = COUNT,
+            fill = COUNT_TYPE,
+            label = case_match(
+                COUNT_TYPE,
+                "N_CHRONICALLY_ABSENT" ~ str_c(as.character(PCT_CHRONICALLY_ABSENT), "%"),
+                "N_STUDENTS" ~ as.character(COUNT)
+            )
+        )
+    ) +
+    geom_col(position = "identity") +
+    facet_wrap(vars(STUDENT_GROUP)) +
+    labs(
+        title = "Chronically Absent by Gender",
+        subtitle = "State of TN",
+        x = "Grade",
+        y = "Number of Students",
+        fill = NULL
+    ) +
+    scale_y_continuous(labels = label_comma()) +
+    scale_x_discrete(guide = guide_axis(angle = 45)) +
+    scale_fill_hue(
+        labels = c("N_CHRONICALLY_ABSENT" = "Chronically Absent",
+                   "N_STUDENTS" = "Total Students"),
+        guide = guide_legend(reverse = TRUE)
+    ) +
+    geom_label(
+        colour = "white",
+        fontface = "bold",
+        key_glyph = draw_key_rect
+    )
 ```
 
