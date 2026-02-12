@@ -422,7 +422,7 @@ ggsave(filename = "../plots/mnps_suspension_by_gender_plot.png", # Set path
 
 # Work with state chronic absenteeism data
 ```{r}
-state_chronic_absenteeism_suppressed_df |> 
+state_chronically_absent_by_gender_plot <- state_chronic_absenteeism_suppressed_df |> 
     clean_names("screaming_snake") |> 
     filter(STUDENT_GROUP %in% c("Male", "Female")) |> 
     pivot_longer(
@@ -464,5 +464,16 @@ state_chronic_absenteeism_suppressed_df |>
         fontface = "bold",
         key_glyph = draw_key_rect
     )
+
+state_chronically_absent_by_gender_plot
 ```
 
+
+```{r}
+# Save the plot
+ggsave(filename = "../plots/state_chronically_absent_by_gender_plot.png", # Set path
+       plot = state_chronically_absent_by_gender_plot, # Select plot
+       width = 6, # Set width
+       height = 4, # Set height
+       dpi = 300) # Set resolution
+```
