@@ -7,16 +7,16 @@ output: html_document
 ```{r}
 library(tidyverse)
 library(janitor) # Cleans names of a data.frame
-library(scales)
+library(scales) # Graphical scales for plots
+library(ggrepel) # Additional geoms for ggplot
 ```
 
 
 # Explore district profile
 ```{r}
-# Read data
-district_profile_df <- read_csv("../data/district-profile-2024-2025.csv")
+district_profile_df <- read_csv("../data/district-profile-2024-2025.csv") |> 
+    clean_names("screaming_snake")
 
-# View summary
 district_profile_df |> summary()
 ```
 
@@ -24,90 +24,82 @@ district_profile_df |> summary()
 ```{r}
 # Convert district_no to factor
 district_profile_df <- district_profile_df |> 
-    mutate(district_no = factor(district_no))
+    mutate(DISTRICT_NO = factor(DISTRICT_NO))
 ```
 
 
 ```{r}
-# Verify unique district numbers
-district_profile_df |> distinct(district_no)
+district_profile_df |> distinct(DISTRICT_NO)
 ```
 
 
 ```{r}
-# district_no 0 State of Tennessee
-district_profile_df |> filter(district_no == 0)
+district_profile_df |> filter(DISTRICT_NO == 0)
 ```
 
 
 ```{r}
 # Percentage columns contain non-numeric values: "Less than 1%", "Fewer than 10 students", "More than 99%"
-district_profile_df |> distinct(hawaiian_pacisld_pct) |> arrange(hawaiian_pacisld_pct)
+district_profile_df |> distinct(HAWAIIAN_PACISLD_PCT) |> arrange(HAWAIIAN_PACISLD_PCT)
 ```
 
 
 # Explore school profile
 ```{r}
-# Read data
-school_profile_df <- read_csv("../data/school-profile-2024-2025.csv")
+school_profile_df <- read_csv("../data/school-profile-2024-2025.csv") |> 
+    clean_names("screaming_snake")
 
-# View summary
 school_profile_df |> summary()
 ```
 
 
 ```{r}
-# Convert district_no and school_no to factor
 school_profile_df <- school_profile_df |> 
-    mutate(district_no = factor(district_no)) |> 
-    mutate(school_no = factor(school_no))
+    mutate(DISTRICT_NO = factor(DISTRICT_NO)) |> 
+    mutate(SCHOOL_NO = factor(SCHOOL_NO))
 ```
 
 
 ```{r}
 # Percentage columns contain non-numeric values: "Less than 5%", "Fewer than 10 students", "More than 95%"
-school_profile_df |> distinct(white_pct) |> arrange(desc(white_pct))
+school_profile_df |> distinct(WHITE_PCT) |> arrange(desc(WHITE_PCT))
 ```
 
 
 # Explore district discipline
 ```{r}
-# Read data
-district_discipline_df <- read_csv("../data/discipline-district-2425.csv")
+district_discipline_df <- read_csv("../data/discipline-district-2425.csv") |> 
+    clean_names("screaming_snake")
 
-# View summary
 district_discipline_df |> summary()
 ```
 
 
 ```{r}
-# Convert District to factor
 district_discipline_df <- district_discipline_df |> 
-    mutate(District = factor(District))
+    mutate(DISTRICT = factor(DISTRICT))
 ```
 
 
 ```{r}
 # Count and percent columns contain non-numeric values: "Less than 1%", "Fewer than 10 students"
-district_discipline_df |> distinct(`Students Iss`) |> arrange(desc(`Students Iss`))
+district_discipline_df |> distinct(STUDENTS_ISS) |> arrange(desc(STUDENTS_ISS))
 ```
 
 
 # Explore school discipline
 ```{r}
-# Read data
-school_discipline_df <- read_csv("../data/discipline-school-2425.csv")
+school_discipline_df <- read_csv("../data/discipline-school-2425.csv") |> 
+    clean_names("screaming_snake")
 
-# View summary
 school_discipline_df |> summary()
 ```
 
 
 ```{r}
-# Convert District and School to factor
 school_discipline_df <- school_discipline_df |> 
-    mutate(District = factor(District)) |> 
-    mutate(School = factor(School))
+    mutate(DISTRICT = factor(DISTRICT)) |> 
+    mutate(SCHOOL = factor(SCHOOL))
 ```
 
 
@@ -115,111 +107,103 @@ school_discipline_df <- school_discipline_df |>
 # Does not contain district 0 for State of TN
 # Duplicates in School and School Name (separate districts)
 # Count and percent columns contain non-numeric values: "Fewer than 10 students", "Less than 1%", "Less than 5%"
-school_discipline_df |> distinct(`Percent Disciplined`) |> arrange(desc(`Percent Disciplined`))
+school_discipline_df |> distinct(PERCENT_DISCIPLINED) |> arrange(desc(PERCENT_DISCIPLINED))
 ```
 
 
 # Explore state chronic absenteeism suppressed
 ```{r}
-# Read data
-state_chronic_absenteeism_suppressed_df <- read_csv("../data/state_chronic_absenteeism_suppressed_2025.csv")
+state_chronic_absenteeism_suppressed_df <- read_csv("../data/state_chronic_absenteeism_suppressed_2025.csv") |> 
+    clean_names("screaming_snake")
 
-# View summary
 state_chronic_absenteeism_suppressed_df |> summary()
 ```
 
 
 ```{r}
 # No non-numeric values in count or percentage columns
-state_chronic_absenteeism_suppressed_df |> distinct(n_chronically_absent) |> arrange(n_chronically_absent)
+state_chronic_absenteeism_suppressed_df |> distinct(N_CHRONICALLY_ABSENT) |> arrange(N_CHRONICALLY_ABSENT)
 ```
 
 
 # Explore district chronic absenteeism suppressed
 ```{r}
-# Read data
-district_chronic_absenteeism_suppressed_df <- read_csv("../data/district_chronic_absenteeism_suppressed_2025.csv")
+district_chronic_absenteeism_suppressed_df <- read_csv("../data/district_chronic_absenteeism_suppressed_2025.csv") |> 
+    clean_names("screaming_snake")
 
-# View summary
 district_chronic_absenteeism_suppressed_df |> summary()
 ```
 
 
 ```{r}
-# Convert system to factor
 district_chronic_absenteeism_suppressed_df <- district_chronic_absenteeism_suppressed_df |> 
-    mutate(system = factor(system))
+    mutate(SYSTEM = factor(SYSTEM))
 ```
 
 
 ```{r}
 # I think "system" is the same as "district"
 # n_chronically_absent and pct_chronically_absent contains non-numeric values: "<10 students", "<1%"
-district_chronic_absenteeism_suppressed_df |> distinct(pct_chronically_absent) |> arrange(desc(pct_chronically_absent))
+district_chronic_absenteeism_suppressed_df |> distinct(PCT_CHRONICALLY_ABSENT) |> arrange(desc(PCT_CHRONICALLY_ABSENT))
 ```
 
 
 # Explore school chronic absenteeism suppressed
 ```{r}
-# Read data
-school_chronic_absenteeism_suppressed_df <- read_csv("../data/school_chronic_absenteeism_suppressed_2025.csv")
+school_chronic_absenteeism_suppressed_df <- read_csv("../data/school_chronic_absenteeism_suppressed_2025.csv") |> 
+    clean_names("screaming_snake")
 
-# View summary
 school_chronic_absenteeism_suppressed_df |> summary()
 ```
 
 
 ```{r}
-# Convert system and school to factor
 school_chronic_absenteeism_suppressed_df <- school_chronic_absenteeism_suppressed_df |> 
-    mutate(system = factor(system)) |> 
-    mutate(system = factor(school))
+    mutate(system = factor(SYSTEM)) |> 
+    mutate(system = factor(SCHOOL))
 ```
 
 
 ```{r}
 # I think "system" is the same as "district"
 # n_chronically_absent contains non-numeric values: "<10 students", "<5%", ">95%"
-school_chronic_absenteeism_suppressed_df |> distinct(n_chronically_absent) |> arrange(desc(n_chronically_absent))
+school_chronic_absenteeism_suppressed_df |> distinct(N_CHRONICALLY_ABSENT) |> arrange(desc(N_CHRONICALLY_ABSENT))
 ```
 
 
 # Explore MNPS enrollment data
 ```{r}
-# Read data
-mnps_enrollment_df <- read_csv("../data/MNPS Enrollment Data 031025.csv")
+mnps_enrollment_df <- read_csv("../data/MNPS Enrollment Data 031025.csv") |> 
+    clean_names("screaming_snake")
 
-# View summary
 mnps_enrollment_df |> summary()
 ```
 
 
 ```{r}
-# Convert School ID and Zip Code to factor
 mnps_enrollment_df <- mnps_enrollment_df |> 
-    mutate(`School ID` = factor(`School ID`)) |> 
-    mutate(`Zip Code` = factor(`Zip Code`))
+    mutate(SCHOOL_ID = factor(SCHOOL_ID)) |> 
+    mutate(ZIP_CODE = factor(ZIP_CODE))
 ```
 
 
 ```{r}
 # Ignore `School Level` value "Adult"? Verify 149 districts
-mnps_enrollment_df |> distinct(`School Level`) |> arrange(desc(`School Level`))
+mnps_enrollment_df |> distinct(SCHOOL_LEVEL) |> arrange(desc(SCHOOL_LEVEL))
 ```
 
 
 ```{r}
 # Grade columns contains non-numeric values: "%", "< 10", "< 5%", "> 95%"
-mnps_enrollment_df |> distinct(`Black or African American`) |> arrange(desc(`Black or African American`))
+mnps_enrollment_df |> distinct(BLACK_OR_AFRICAN_AMERICAN) |> arrange(desc(BLACK_OR_AFRICAN_AMERICAN))
 ```
 
 
 # Explore MNPS behavior data
 ```{r}
-# Read data
-mnps_behavior_df <- read_csv("../data/MNPS Behavior Data 031025.csv")
+mnps_behavior_df <- read_csv("../data/MNPS Behavior Data 031025.csv") |> 
+    clean_names("screaming_snake")
 
-# View summary
 mnps_behavior_df |> summary()
 ```
 
@@ -232,14 +216,15 @@ mnps_behavior_df |> filter(SCHOOL == "*DISTRICT")
 
 ```{r}
 # Numeric columns contain non-numeric values: "%", < 10", "< 5%", "> 95%"
-mnps_behavior_df |> distinct(Remandment, .keep_all = TRUE)
+mnps_behavior_df |> distinct(REMANDMENT, .keep_all = TRUE)
 ```
 
 
 # Explore MNPS attendance data
 ```{r}
 # Read data
-mnps_attendance_df <- read_csv("../data/MNPS Attendance Data 031025.csv")
+mnps_attendance_df <- read_csv("../data/MNPS Attendance Data 031025.csv") |> 
+    clean_names("screaming_snake")
 
 # View summary
 mnps_attendance_df |> summary()
@@ -247,49 +232,19 @@ mnps_attendance_df |> summary()
 
 
 ```{r}
-# Convert SchoolID to factor
 mnps_attendance_df <- mnps_attendance_df |> 
-    mutate(SchoolID = factor(SchoolID))
+    mutate(SCHOOL_ID = factor(SCHOOL_ID))
 ```
 
 
 ```{r}
-# Maybe reconcile with state and district data
-mnps_attendance_df |> filter(SchoolName == "*DISTRICT")
+mnps_attendance_df |> filter(SCHOOL_NAME == "*DISTRICT")
 ```
 
 
 ```{r}
 # Numeric columns contain non-numeric values: "%", < 10", "< 5%"
-mnps_attendance_df |> distinct(ChronicallyAbsentPercent) |> arrange(desc(ChronicallyAbsentPercent))
-```
-
-
-# Format column names
-```{r}
-# Rename tibble columns with janitor
-mnps_enrollment_df <- mnps_enrollment_df |> 
-    clean_names("screaming_snake")
-
-mnps_enrollment_df |> colnames()
-```
-
-
-```{r}
-# Rename tibble columns with janitor
-mnps_behavior_df <- mnps_behavior_df |> 
-    clean_names("screaming_snake")
-
-mnps_behavior_df |> colnames()
-```
-
-
-```{r}
-# Rename tibble columns with janitor
-mnps_attendance_df <- mnps_attendance_df |> 
-    clean_names("screaming_snake")
-
-mnps_attendance_df |> colnames()
+mnps_attendance_df |> distinct(CHRONICALLY_ABSENT_PERCENT) |> arrange(desc(CHRONICALLY_ABSENT_PERCENT))
 ```
 
 
@@ -357,54 +312,68 @@ mnps_behavior_df
 mnps_suspension_by_gender_display_df <- mnps_behavior_df |> 
     filter(SUBGROUP == "Gender") |> 
     select(SCHOOL, TOTAL_SUBGROUP_ENROLLMENT, DATA_VALUE, SUSPENSION) |> 
-    rename(TOTAL_ENROLLMENT = TOTAL_SUBGROUP_ENROLLMENT, GENDER = DATA_VALUE)
+    rename(
+        TOTAL_ENROLLMENT = TOTAL_SUBGROUP_ENROLLMENT,
+        GENDER = DATA_VALUE
+    )
 
 mnps_suspension_by_gender_display_df
 ```
 
 
 ```{r}
-# Create tibble for plotting suspension by gender
-mnps_suspension_by_gender_plot_df <- mnps_behavior_df |> 
-    filter(SCHOOL == "*DISTRICT" & SUBGROUP == "Gender") |> # Filter by district totals and gender
-    mutate(SUSPENSION_COUNT = round(TOTAL_SUBGROUP_ENROLLMENT * SUSPENSION_PERCENT / 100)) |> # Create column for calculated number of students suspended
-    select(DATA_VALUE, TOTAL_SUBGROUP_ENROLLMENT, SUSPENSION, SUSPENSION_COUNT) |> # Narrow down necessary columns
-    rename(GENDER = DATA_VALUE, TOTAL_ENROLLMENT = TOTAL_SUBGROUP_ENROLLMENT) |>  # Rename coulumns
-    pivot_longer(cols = c(TOTAL_ENROLLMENT, SUSPENSION_COUNT), # Move TOTAL_ENROLLMENT and SUSPENSION_COUNT to COUNT_TYPE column
-                 names_to = "COUNT_TYPE",
-                 values_to = "COUNT")
-
-mnps_suspension_by_gender_plot_df
-```
-
-
-```{r}
-# Create plot with total students with percent of suspended students
-mnps_suspension_by_gender_plot <- mnps_suspension_by_gender_plot_df |> 
-    ggplot(aes(
-        x = GENDER,
-        y = COUNT,
-        fill = COUNT_TYPE,
-        label = case_match(COUNT_TYPE,
-                           "SUSPENSION_COUNT" ~ SUSPENSION, # Use SUSPENSION as label for suspended students
-                           "TOTAL_ENROLLMENT" ~ as.character(COUNT)) # Use COUNT as label for total students
-        )) +
+mnps_suspension_by_gender_plot <- mnps_behavior_df |> 
+    # Create tibble for suspension by gender
+    filter(SCHOOL == "*DISTRICT" & SUBGROUP == "Gender") |>
+    # Create column for calculated number of students suspended
+    mutate(SUSPENSION_COUNT = round(TOTAL_SUBGROUP_ENROLLMENT * SUSPENSION_PERCENT / 100)) |>
+    select(DATA_VALUE, TOTAL_SUBGROUP_ENROLLMENT, SUSPENSION, SUSPENSION_COUNT) |>
+    rename(
+        GENDER = DATA_VALUE,
+        TOTAL_ENROLLMENT = TOTAL_SUBGROUP_ENROLLMENT
+    ) |>
+    # Move TOTAL_ENROLLMENT and SUSPENSION_COUNT to COUNT_TYPE column
+    pivot_longer(
+        cols = c(TOTAL_ENROLLMENT, SUSPENSION_COUNT),
+        names_to = "COUNT_TYPE",
+        values_to = "COUNT"
+    ) |> 
+    # Create a plot
+    ggplot(
+        aes(
+            x = GENDER,
+            y = COUNT,
+            fill = COUNT_TYPE,
+            label = case_match(
+                COUNT_TYPE,
+                "SUSPENSION_COUNT" ~ SUSPENSION,
+                "TOTAL_ENROLLMENT" ~ as.character(COUNT)
+            )
+        )
+    ) +
     # Create bar graph with info layered in front of each other
     geom_col(position = "identity") +
-    # Update the plot labels
-    labs(title = "Suspension by Gender",
-         subtitle = "MNPS District",
-         x = "Gender",
-         y = "Number of Students",
-         fill = NULL) +
+    # Format labels
+    labs(
+        title = "Suspension by Gender",
+        subtitle = "MNPS District",
+        x = "Gender",
+        y = "Number of Students",
+        fill = NULL
+    ) +
+    # Format y-axis ticks
     scale_y_continuous(labels = label_comma()) +
-    scale_fill_hue(labels = c("SUSPENSION_COUNT" = "Suspended Students",
-                               "TOTAL_ENROLLMENT" = "Total Students"),
-                    guide = guide_legend(reverse = TRUE)) + # Reverse order of legend labels
-    # Display geom labels
-    geom_label(colour = "white",
-               fontface = "bold",
-               key_glyph = draw_key_rect)
+    # Format fill
+    scale_fill_hue(
+        labels = c("SUSPENSION_COUNT" = "Suspended Students", "TOTAL_ENROLLMENT" = "Total Students"),
+        guide = guide_legend(reverse = TRUE)
+    ) +
+    # Format legend labels
+    geom_label(
+        colour = "white",
+        fontface = "bold",
+        key_glyph = draw_key_rect
+    )
 
 mnps_suspension_by_gender_plot
 ```
@@ -412,17 +381,20 @@ mnps_suspension_by_gender_plot
 
 ```{r}
 # Save the plot
-ggsave(filename = "../plots/mnps_suspension_by_gender_plot.png", # Set path
-       plot = mnps_suspension_by_gender_plot, # Select plot
-       width = 5, # Set width
-       height = 4, # Set height
-       dpi = 300) # Set resolution
+ggsave(
+    filename = "../plots/mnps_suspension_by_gender_plot.png",
+    plot = mnps_suspension_by_gender_plot,
+    width = 5,
+    height = 4,
+    dpi = 100
+)
 ```
 
 
 # Work with state chronic absenteeism data
 ```{r}
 state_chronically_absent_by_gender_plot <- state_chronic_absenteeism_suppressed_df |> 
+    # Create a tibble for state absent by gender
     clean_names("screaming_snake") |> 
     filter(STUDENT_GROUP %in% c("Male", "Female")) |> 
     pivot_longer(
@@ -431,6 +403,7 @@ state_chronically_absent_by_gender_plot <- state_chronic_absenteeism_suppressed_
         values_to = "COUNT"
     ) |> 
     select(STUDENT_GROUP, GRADE_BAND, COUNT_TYPE, COUNT, PCT_CHRONICALLY_ABSENT) |> 
+    # Create a plot
     ggplot(
         aes(
             x = factor(GRADE_BAND, levels = c("All Grades", "K through 8th", "9th through 12th")),
@@ -443,8 +416,11 @@ state_chronically_absent_by_gender_plot <- state_chronic_absenteeism_suppressed_
             )
         )
     ) +
+    # Create bar graph with info layered in front of each other
     geom_col(position = "identity") +
+    # Create facet wrap
     facet_wrap(vars(STUDENT_GROUP)) +
+    # Format labels
     labs(
         title = "Chronically Absent by Gender",
         subtitle = "State of TN",
@@ -452,13 +428,16 @@ state_chronically_absent_by_gender_plot <- state_chronic_absenteeism_suppressed_
         y = "Number of Students",
         fill = NULL
     ) +
+    # Format y-axis ticks
     scale_y_continuous(labels = label_comma()) +
+    # Format x-axis ticks
     scale_x_discrete(guide = guide_axis(angle = 45)) +
+    # Format fill
     scale_fill_hue(
-        labels = c("N_CHRONICALLY_ABSENT" = "Chronically Absent",
-                   "N_STUDENTS" = "Total Students"),
+        labels = c("N_CHRONICALLY_ABSENT" = "Chronically Absent", "N_STUDENTS" = "Total Students"),
         guide = guide_legend(reverse = TRUE)
     ) +
+    # Format legend
     geom_label(
         colour = "white",
         fontface = "bold",
@@ -471,9 +450,240 @@ state_chronically_absent_by_gender_plot
 
 ```{r}
 # Save the plot
-ggsave(filename = "../plots/state_chronically_absent_by_gender_plot.png", # Set path
-       plot = state_chronically_absent_by_gender_plot, # Select plot
-       width = 6, # Set width
-       height = 4, # Set height
-       dpi = 300) # Set resolution
+ggsave(
+    filename = "../plots/state_chronically_absent_by_gender_plot.png",
+    plot = state_chronically_absent_by_gender_plot,
+    width = 7,
+    height = 4,
+    dpi = 100
+)
 ```
+
+
+# Work with district chronic absenteeism data
+```{r}
+district_chronically_absent_by_gender_plot <- district_chronic_absenteeism_suppressed_df |> 
+    # Create tibble for district absent by gender
+    clean_names("screaming_snake") |> 
+    filter(STUDENT_GROUP %in% c("Male", "Female") & GRADE_BAND == "All Grades") |> 
+    mutate(
+        CHRONICALLY_ABSENT_COUNT = if_else(
+            str_detect(N_CHRONICALLY_ABSENT, "<|>"),
+            NA,
+            as.double(N_CHRONICALLY_ABSENT
+            )
+        ),
+        .after = N_CHRONICALLY_ABSENT
+    ) |> 
+    mutate(
+        CHRONICALLY_ABSENT_PERCENT = if_else(
+            str_detect(PCT_CHRONICALLY_ABSENT, "<|>"),
+            NA,
+            as.double(PCT_CHRONICALLY_ABSENT
+            )
+        ),
+        .after = PCT_CHRONICALLY_ABSENT
+    ) |>
+    pivot_longer(
+        cols = c(N_STUDENTS, CHRONICALLY_ABSENT_COUNT),
+        names_to = "COUNT_TYPE",
+        values_to = "COUNT"
+    ) |>
+    select(SYSTEM_NAME, STUDENT_GROUP, COUNT_TYPE, COUNT, PCT_CHRONICALLY_ABSENT, CHRONICALLY_ABSENT_PERCENT) |>
+    # Create plot
+    ggplot(
+        aes(
+            x = COUNT,
+            y = SYSTEM_NAME,
+            fill = COUNT_TYPE,
+            label = case_match(
+                COUNT_TYPE,
+                "CHRONICALLY_ABSENT_COUNT" ~ str_c(as.character(CHRONICALLY_ABSENT_PERCENT), "%"),
+                "N_STUDENTS" ~ as.character(COUNT)
+            )
+        )
+    ) +
+    # Create bar graph
+    geom_col(position = "identity") +
+    # Create facet wrap
+    facet_wrap(vars(STUDENT_GROUP)) +
+    # Format labels
+    labs(
+        title = "Chronically Absent by Gender",
+        subtitle = "Districts",
+        x = "Number of Students",
+        y = "Districts",
+        fill = NULL
+    ) +
+    # Format y-axis ticks
+    scale_y_discrete(limits = rev) +
+    # Format x-axis ticks
+    scale_x_continuous(labels = label_comma(), guide = guide_axis(angle = 45)) +
+    # Format fill
+    scale_fill_hue(
+        labels = c("CHRONICALLY_ABSENT_COUNT" = "Chronically Absent", "N_STUDENTS" = "Total Students"),
+        guide = guide_legend(reverse = TRUE)
+    ) +
+    # Format legend
+    geom_label(
+        colour = "white",
+        fontface = "bold",
+        key_glyph = draw_key_rect,
+        position = position_dodge(width = 2),
+        hjust = -1
+    )
+
+district_chronically_absent_by_gender_plot
+```
+
+
+```{r}
+# Save the plot
+ggsave(
+    filename = "../plots/district_chronically_absent_by_gender_plot.png",
+    plot = district_chronically_absent_by_gender_plot,
+    width = 15,
+    height = 45,
+    dpi = 100
+)
+```
+
+
+# Group data by region
+```{r}
+# Read region data
+region_df <- bind_rows(
+    list(
+        read_csv("../data/tnsd_east_region.csv"),
+        read_csv("../data/tnsd_first_region.csv"),
+        read_csv("../data/tnsd_midcumberland_region.csv"),
+        read_csv("../data/tnsd_northwest_region.csv"),
+        read_csv("../data/tnsd_southcentral_region.csv"),
+        read_csv("../data/tnsd_southeast_region.csv"),
+        read_csv("../data/tnsd_southwest_region.csv"),
+        read_csv("../data/tnsd_uppercumberland_region.csv")
+    )
+) |> 
+    clean_names("screaming_snake")
+
+region_df
+```
+
+
+```{r}
+# Merge district absenteeism with region data
+region_district_absenteeism_df <- district_chronic_absenteeism_suppressed_df |> 
+    left_join(
+        region_df |> select(DISTRICT, REGION_NAME) |> distinct(DISTRICT, .keep_all = TRUE),
+        by = join_by(SYSTEM_NAME == DISTRICT)
+    )
+
+region_district_absenteeism_df
+```
+
+
+```{r}
+region_district_absenteeism_plot <- region_district_absenteeism_df |> 
+    mutate(
+        ABSENT_COUNT = if_else(
+            str_detect(N_CHRONICALLY_ABSENT, "<|>"),
+            NA,
+            as.double(N_CHRONICALLY_ABSENT)
+        ),
+        .after = N_CHRONICALLY_ABSENT
+    ) |>
+    filter(!is.na(REGION_NAME) & STUDENT_GROUP %in% c("Male", "Female") & GRADE_BAND == "All Grades") |>
+    select(REGION_NAME, SYSTEM_NAME, STUDENT_GROUP, N_STUDENTS, ABSENT_COUNT) |> 
+    group_by(REGION_NAME, STUDENT_GROUP) |>
+    summarize(
+        SUM_STUDENT_COUNT = sum(N_STUDENTS),
+        SUM_ABSENT_COUNT = sum(ABSENT_COUNT)
+    ) |> 
+    mutate(ABSENT_PERCENT = round((SUM_ABSENT_COUNT / SUM_STUDENT_COUNT * 100), digits = 1)) |> 
+    pivot_longer(
+        cols = c(SUM_STUDENT_COUNT, SUM_ABSENT_COUNT),
+        names_to = "COUNT_TYPE",
+        values_to = "COUNT"
+    ) |>
+    ggplot(
+        aes(
+            x = REGION_NAME,
+            y = COUNT,
+            fill = COUNT_TYPE,
+            label = case_match(
+                COUNT_TYPE,
+                "SUM_ABSENT_COUNT" ~ str_c(as.character(ABSENT_PERCENT), "%"),
+                "SUM_STUDENT_COUNT" ~ as.character(COUNT)
+            )
+        )
+    ) +
+    geom_col(position = "identity") +
+    facet_grid(rows = vars(STUDENT_GROUP)) +
+    labs(
+        title = "Chronically Absent by Gender",
+        subtitle = "Divided by Region",
+        x = "Regions",
+        y = "Number of Students",
+        fill = NULL
+    ) +
+    scale_x_discrete(guide = guide_axis(angle = 45), limits = rev) +
+    scale_y_continuous(labels = label_comma()) +
+    scale_fill_hue(
+        labels = c("SUM_ABSENT_COUNT" = "Chronically Absent",
+                   "SUM_STUDENT_COUNT" = "Total Students"),
+        guide = guide_legend(reverse = TRUE)
+    ) +
+    geom_label(
+        colour = "white",
+        fontface = "bold",
+        key_glyph = draw_key_rect
+    )
+
+region_district_absenteeism_plot
+```
+
+
+```{r}
+# Save the plot
+ggsave(
+    filename = "../plots/region_district_absenteeism_plot.png",
+    plot = region_district_absenteeism_plot,
+    width = 10,
+    height = 10,
+    dpi = 100
+)
+```
+
+
+# Work with school chronic absenteeism data
+```{r}
+school_absent_df <- school_chronic_absenteeism_suppressed_df |> 
+    mutate(
+        ABSENT_COUNT = if_else(
+            str_detect(N_CHRONICALLY_ABSENT, "<|>"),
+            NA,
+            as.double(N_CHRONICALLY_ABSENT)
+        ),
+        .after = N_CHRONICALLY_ABSENT
+    ) |> 
+    mutate(
+        ABSENT_PERCENT = if_else(
+            str_detect(PCT_CHRONICALLY_ABSENT, "<|>"),
+            NA,
+            as.double(PCT_CHRONICALLY_ABSENT)
+        ),
+        .after = PCT_CHRONICALLY_ABSENT
+    ) |> 
+    filter(STUDENT_GROUP %in% c("Male", "Female")) |> 
+    select(SCHOOL_NAME, STUDENT_GROUP, N_STUDENTS, ABSENT_COUNT, ABSENT_PERCENT)
+
+school_absent_df
+```
+
+
+```{r}
+school_absent_model <- glm(factor(STUDENT_GROUP) ~ ABSENT_PERCENT, data = school_absent_df, family = "binomial")
+
+summary(school_absent_model)
+```
+
