@@ -310,14 +310,75 @@ mnps_behavior_df
 ```{r}
 # Create tibble for clean display of suspension by gender
 mnps_suspension_by_gender_display_df <- mnps_behavior_df |> 
-    filter(SUBGROUP == "Gender") |> 
-    select(SCHOOL, TOTAL_SUBGROUP_ENROLLMENT, DATA_VALUE, SUSPENSION) |> 
-    rename(
-        TOTAL_ENROLLMENT = TOTAL_SUBGROUP_ENROLLMENT,
-        GENDER = DATA_VALUE
-    )
+    filter(SCHOOL != "*DISTRICT" & SUBGROUP == "Gender")
 
 mnps_suspension_by_gender_display_df
+```
+
+
+```{r}
+mnps_gender_suspension_model <- glm(factor(DATA_VALUE) ~ SUSPENSION_PERCENT, data = mnps_suspension_by_gender_display_df, family = "binomial")
+
+summary(mnps_gender_suspension_model)
+```
+
+
+```{r}
+mnps_suspension_gender_model <- lm(SUSPENSION_PERCENT ~ DATA_VALUE, data = mnps_suspension_by_gender_display_df)
+
+summary(mnps_suspension_gender_model)
+```
+
+
+```{r}
+mnps_suspend_gender_paired_df <- mnps_suspension_by_gender_display_df |> 
+    select(SCHOOL, DATA_VALUE, SUSPENSION_PERCENT) |> 
+    pivot_wider(
+        names_from = DATA_VALUE,
+        values_from = SUSPENSION_PERCENT
+    )
+
+mnps_suspend_gender_paired_df
+```
+
+
+```{r}
+t.test(
+    x = mnps_suspend_gender_paired_df$MALE,
+    y = mnps_suspend_gender_paired_df$FEMALE,
+    paired = TRUE
+)
+```
+
+
+
+```{r}
+t.test(SUSPENSION_PERCENT ~ DATA_VALUE, data = mnps_suspension_by_gender_display_df)
+```
+
+
+```{r}
+mnps_suspension_by_gender_df <- mnps_behavior_df |> 
+    filter(SCHOOL != "*DISTRICT" & SUBGROUP == "Gender") |>
+    mutate(SUSPENSION_COUNT = round(TOTAL_SUBGROUP_ENROLLMENT * SUSPENSION_PERCENT / 100)) |>
+    select(SCHOOL, DATA_VALUE, TOTAL_SUBGROUP_ENROLLMENT, SUSPENSION, SUSPENSION_COUNT) |>
+    rename(
+        GENDER = DATA_VALUE,
+        TOTAL_ENROLLMENT = TOTAL_SUBGROUP_ENROLLMENT
+    )
+# |>
+#     pivot_longer(
+#         cols = c(TOTAL_ENROLLMENT, SUSPENSION_COUNT),
+#         names_to = "COUNT_TYPE",
+#         values_to = "COUNT"
+#     )
+    
+mnps_suspension_by_gender_df
+```
+
+
+```{r}
+t.test(cbind(SUSPENSION_COUNT, TOTAL_ENROLLMENT - SUSPENSION_COUNT) ~ GENDER, data = mnps_suspension_by_gender_df)
 ```
 
 
@@ -388,6 +449,19 @@ ggsave(
     height = 4,
     dpi = 100
 )
+```
+
+
+# Work with MNPS attendance data
+```{r}
+# Merge gender data with attendance
+# Cannot determine absent rates by gender
+mnps_attendance_df |> 
+    inner_join(
+        mnps_enrollment_df,
+        by = join_by(SCHOOL_NAME == SCHOOL_NAME, DATA_AS_OF)
+    ) |> 
+    select(SCHOOL_NAME, ACTIVE_ENROLLMENT, MALE, FEMALE, CHRONICALLY_ABSENT_COUNT, CHRONICALLY_ABSENT_PERCENT)
 ```
 
 
@@ -657,6 +731,7 @@ ggsave(
 
 # Work with school chronic absenteeism data
 ```{r}
+# Clean tibble to model data
 school_absent_df <- school_chronic_absenteeism_suppressed_df |> 
     mutate(
         ABSENT_COUNT = if_else(
@@ -675,15 +750,235 @@ school_absent_df <- school_chronic_absenteeism_suppressed_df |>
         .after = PCT_CHRONICALLY_ABSENT
     ) |> 
     filter(STUDENT_GROUP %in% c("Male", "Female")) |> 
-    select(SCHOOL_NAME, STUDENT_GROUP, N_STUDENTS, ABSENT_COUNT, ABSENT_PERCENT)
+    select(SYSTEM_NAME, SCHOOL_NAME, STUDENT_GROUP, N_STUDENTS, ABSENT_COUNT, ABSENT_PERCENT)
 
 school_absent_df
 ```
 
 
 ```{r}
+# Logistic regression: absent percent is not statistically significant
 school_absent_model <- glm(factor(STUDENT_GROUP) ~ ABSENT_PERCENT, data = school_absent_df, family = "binomial")
 
 summary(school_absent_model)
+```
+
+
+```{r}
+# Linear regression: student group is not statistically significant
+school_absent_linear = lm(ABSENT_PERCENT ~ STUDENT_GROUP, data = school_absent_df)
+
+school_absent_linear |> summary()
+```
+
+
+```{r}
+school_absent_df |> 
+    ggplot(aes(x = N_STUDENTS, y = ABSENT_PERCENT, color = STUDENT_GROUP, alpha = 0.5)) +
+    geom_point(position = position_jitter())
+```
+
+
+```{r}
+# Merge school absenteeism with region data
+region_school_absenteeism_df <- school_absent_df |> 
+    left_join(
+        region_df |> select(DISTRICT, REGION_NAME) |> distinct(DISTRICT, .keep_all = TRUE),
+        by = join_by(SYSTEM_NAME == DISTRICT)
+    )
+
+region_school_absenteeism_df
+```
+
+
+```{r}
+region_school_absenteeism_df |> filter(is.na(ABSENT_COUNT))
+```
+
+
+```{r}
+# Logistic regression: region name is not statistically significant
+school_absent_region_model <- glm(factor(STUDENT_GROUP) ~ ABSENT_PERCENT + REGION_NAME, data = region_school_absenteeism_df, family = "binomial")
+
+summary(school_absent_region_model)
+```
+
+
+```{r}
+# Linear regression: may be statistically significant
+school_absent_region_linear = lm(ABSENT_PERCENT ~ STUDENT_GROUP + REGION_NAME, data = region_school_absenteeism_df)
+
+school_absent_region_linear |> summary()
+```
+
+
+```{r}
+region_school_absenteeism_plot <- region_school_absenteeism_df |> 
+    ggplot(aes(x = N_STUDENTS, y = ABSENT_PERCENT, color = STUDENT_GROUP, apha = 0.5)) +
+    geom_point(position = position_jitter()) +
+    facet_grid(rows = vars(REGION_NAME))
+
+region_school_absenteeism_plot
+```
+
+
+```{r}
+# Save the plot
+ggsave(
+    filename = "../plots/region_school_absenteeism_plot.png",
+    plot = region_school_absenteeism_plot,
+    width = 10,
+    height = 10,
+    dpi = 100
+)
+```
+
+
+```{r}
+region_school_absenteeism_df |> 
+    ggplot(aes(x = ABSENT_PERCENT, y = N_STUDENTS, color = STUDENT_GROUP, apla = 0.5)) +
+    geom_point() +
+    facet_wrap(vars(STUDENT_GROUP))
+```
+
+
+```{r}
+region_school_absenteeism_df |> 
+    ggplot(aes(x = ABSENT_PERCENT, y = N_STUDENTS, color = STUDENT_GROUP, alpha = 0.5)) +
+    geom_point() +
+    facet_wrap(vars(STUDENT_GROUP)) +
+    scale_y_log10() +
+    scale_x_log10()
+```
+
+
+```{r}
+# Linear regression: 
+lm(ABSENT_PERCENT ~  N_STUDENTS, data = region_school_absenteeism_df) |> summary()
+```
+
+
+# Work with MNPS absenteesim data
+```{r}
+mnps_absent_df <- mnps_enrollment_df |>
+    select(SCHOOL_NAME) |>
+    left_join(
+        school_absent_df,
+        by = join_by(SCHOOL_NAME == SCHOOL_NAME)
+    ) |> 
+    filter(SYSTEM_NAME == "Davidson County")
+
+mnps_absent_df
+```
+
+
+```{r}
+mnps_absent_df |> 
+    group_by(STUDENT_GROUP) |> 
+    summarize(sum(ABSENT_COUNT, na.rm = TRUE), sum(N_STUDENTS, na.rm = TRUE))
+```
+
+
+```{r}
+mnps_absent_gender_model <- glm(cbind(ABSENT_COUNT, N_STUDENTS - ABSENT_COUNT) ~ STUDENT_GROUP, data = mnps_absent_df, family = "binomial")
+
+summary(mnps_absent_gender_model)
+```
+
+
+
+```{r}
+mnps_gender_absent_model <- glm(factor(STUDENT_GROUP) ~ ABSENT_PERCENT, data = mnps_absent_df, family = "binomial")
+
+summary(mnps_gender_absent_model)
+```
+
+
+```{r}
+mnps_absent_gender_model <- lm(ABSENT_PERCENT ~ STUDENT_GROUP, data = mnps_absent_df)
+
+summary(mnps_absent_gender_model)
+```
+
+
+```{r}
+mnps_absent_df |> 
+    ggplot(aes(x = ABSENT_PERCENT, y = N_STUDENTS, color = STUDENT_GROUP)) +
+    geom_point()
+```
+
+
+```{r}
+mnps_absent_df |> 
+    summarise(
+        correlation = cor(N_STUDENTS, ABSENT_PERCENT, use = "complete.obs")
+    )
+```
+
+
+```{r}
+mnps_absent_df |> 
+    mutate(STUDENT_GROUP_BI = if_else(STUDENT_GROUP == "Male", 0, 1)) |> 
+    summarise(
+        correlation = cor(STUDENT_GROUP_BI, ABSENT_PERCENT, use = "complete.obs")
+    )
+```
+
+
+```{r}
+school_absent_df |> 
+    summarise(
+        correlation = cor(N_STUDENTS, ABSENT_PERCENT, use = "complete.obs")
+    )
+```
+
+
+```{r}
+mnps_absent_gender_paired_df <- mnps_absent_df |> 
+    distinct(SCHOOL_NAME, STUDENT_GROUP, .keep_all = TRUE) |> 
+    select(SCHOOL_NAME, STUDENT_GROUP, ABSENT_PERCENT) |>
+    pivot_wider(
+        names_from = STUDENT_GROUP,
+        values_from = ABSENT_PERCENT
+    )
+
+mnps_absent_gender_paired_df
+```
+
+
+```{r}
+t.test(
+    x = mnps_absent_gender_paired_df$Male,
+    y = mnps_absent_gender_paired_df$Female,
+    paired = TRUE
+)
+```
+
+
+```{r}
+mnps_absent_df |>
+    group_by(STUDENT_GROUP) |> 
+    summarise(
+        TOTAL_STUDENTS = sum(N_STUDENTS),
+        TOTAL_ABSENT = sum(ABSENT_COUNT, na.rm = TRUE)
+    ) |> 
+    mutate(ABSENT_PERCENT = str_c(as.character(round(TOTAL_ABSENT / TOTAL_STUDENTS * 100, digit = 1)), "%")) |> 
+    pivot_longer(
+        cols = c(TOTAL_STUDENTS, TOTAL_ABSENT),
+        names_to = "COUNT_TYPE",
+        values_to = "COUNT"
+    ) |> 
+    ggplot(
+        aes(
+            x = STUDENT_GROUP,
+            y = COUNT,
+            fill = COUNT_TYPE
+        )
+    ) +
+    geom_col(
+        position = "identity"
+    )
+
+# mnps_absent_df
 ```
 
