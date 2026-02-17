@@ -8,34 +8,27 @@
 #
 
 
-# Define UI for application that draws a histogram
+
 fluidPage(
     
-    # Application title
     titlePanel("TN Schools Attendance & Behavior"),
     
-    # Sidebar with a slider input for number of bins
     sidebarLayout(
         sidebarPanel(
             selectInput("area_input", "Select Area:",
                         choices = c("State of TN", "Metro Nashville Public Schools"),
                         selected = "Metro Nashville Public Schools"),
-            selectInput("subgroup_input", "Select Category:",
+            selectInput("subgroup_input", "Select subgroup:",
                         choices = mnps_subgroup_list,
-                        selected = "Gender")
+                        selected = "Gender"),
+            selectInput("behavior_input", "Select behavior:",
+                        choices = c("Suspension", "Chronic Absenteeism"),
+                        selected = "Suspension")
         ),
-        
         navset_card_tab(
-            nav_panel(title = "Graphs", plotOutput("mnps_plot")),
-            nav_panel(title = "Table", DTOutput("mnps_table")),
-            nav_panel(title = "TAB 3", value = p("CONTENT3")),
+            nav_panel(title = "Graph", plotOutput("display_graph")),
+            nav_panel(title = "Table", DTOutput("display_table")),
             id = "selected_card_tab"
         )
-        
-        # Show a plot of the generated distribution
-        # mainPanel(
-        #     plotOutput("mnps_plot"),
-        #     DTOutput("mnps_table")
-        # )
     )
 )
