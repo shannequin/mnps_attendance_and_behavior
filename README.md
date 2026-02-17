@@ -1,5 +1,10 @@
 # mnps_attendance_and_behavior
 
+## Overview
+Using data collected from Metro Nashville Public Schools and the State of TN research, we want to analyze the attendance and behavior of the students.
+* Hypthesis: The rate of behavior incidences is significantly higher for male students than female students.
+* Null Hypothesis: The rate of behavior incidences is not significantly higher for male students than female students.
+
 ## Sources
 * Metro Nashville Public Schools Open Data Portal
 ** https://www.mnps.org/students-families/portals/open-data-portal

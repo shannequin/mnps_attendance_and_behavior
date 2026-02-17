@@ -181,6 +181,12 @@ mnps_enrollment_df |> summary()
 
 
 ```{r}
+mnps_enrollment_df
+```
+
+
+
+```{r}
 mnps_enrollment_df <- mnps_enrollment_df |> 
     mutate(SCHOOL_ID = factor(SCHOOL_ID)) |> 
     mutate(ZIP_CODE = factor(ZIP_CODE))
@@ -956,7 +962,7 @@ t.test(
 
 
 ```{r}
-mnps_absent_df |>
+mnps_absent_plot <- mnps_absent_df |>
     group_by(STUDENT_GROUP) |> 
     summarise(
         TOTAL_STUDENTS = sum(N_STUDENTS),
@@ -972,13 +978,55 @@ mnps_absent_df |>
         aes(
             x = STUDENT_GROUP,
             y = COUNT,
-            fill = COUNT_TYPE
+            fill = COUNT_TYPE,
+            label = case_match(COUNT_TYPE,
+                               "TOTAL_ABSENT" ~ ABSENT_PERCENT,
+                               "TOTAL_STUDENTS" ~ as.character(COUNT))
         )
     ) +
-    geom_col(
-        position = "identity"
-    )
+    geom_col(position = "identity") +
+    labs(title = "Chronic Absenteeism by Gender",
+         subtitle = "MNPS District",
+         x = "Gender",
+         y = "Number of Students",
+         fill = NULL) +
+    scale_fill_hue(labels = c("TOTAL_ABSENT" = "Absent Students",
+                              "TOTAL_STUDENTS" = "Total Students"),
+                   # Reverse order of legend labels
+                   guide = guide_legend(reverse = TRUE)) +
+    # Display geom labels
+    geom_label(colour = "white",
+               fontface = "bold",
+               key_glyph = draw_key_rect)
 
-# mnps_absent_df
+mnps_absent_plot
+```
+
+
+```{r}
+# Save the plot
+ggsave(
+    filename = "../plots/mnps_absent_plot.png",
+    plot = mnps_absent_plot,
+    width = 5,
+    height = 4,
+    dpi = 100
+)
+```
+
+
+```{r}
+mnps_absent_df |> 
+    group_by(STUDENT_GROUP) |> 
+    summarise(
+        N_STUDENTS = sum(N_STUDENTS),
+        ABSENT_COUNT = sum(ABSENT_COUNT, na.rm = TRUE)
+    ) |> 
+    mutate(SCHOOL_NAME = "*DISTRICT") |>
+    mutate(ABSENT_PERCENT = round(ABSENT_COUNT / N_STUDENTS * 100, digit = 1)) |>
+    full_join(
+        mnps_absent_df
+    ) #|>
+    # arrange(SCHOOL_NAME)
 ```
 
