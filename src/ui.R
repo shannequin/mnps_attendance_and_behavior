@@ -17,7 +17,10 @@ fluidPage(
     # Sidebar with a slider input for number of bins
     sidebarLayout(
         sidebarPanel(
-            selectInput("mnps_subgroup", "Select category:",
+            selectInput("area_input", "Select Area:",
+                        choices = c("State of TN", "Metro Nashville Public Schools"),
+                        selected = "Metro Nashville Public Schools"),
+            selectInput("subgroup_input", "Select Category:",
                         choices = mnps_subgroup_list,
                         selected = "Gender")
         ),
