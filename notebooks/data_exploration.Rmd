@@ -8,11 +8,10 @@ output: html_document
 library(tidyverse)
 library(janitor) # Cleans names of a data.frame
 library(scales) # Graphical scales for plots
-library(ggrepel) # Additional geoms for ggplot
 ```
 
 
-# Explore district profile
+# Read and explore TN data
 ```{r}
 district_profile_df <- read_csv("../data/district-profile-2024-2025.csv") |> 
     clean_names("screaming_snake")
@@ -22,7 +21,6 @@ district_profile_df |> summary()
 
 
 ```{r}
-# Convert district_no to factor
 district_profile_df <- district_profile_df |> 
     mutate(DISTRICT_NO = factor(DISTRICT_NO))
 ```
@@ -44,7 +42,6 @@ district_profile_df |> distinct(HAWAIIAN_PACISLD_PCT) |> arrange(HAWAIIAN_PACISL
 ```
 
 
-# Explore school profile
 ```{r}
 school_profile_df <- read_csv("../data/school-profile-2024-2025.csv") |> 
     clean_names("screaming_snake")
@@ -66,7 +63,6 @@ school_profile_df |> distinct(WHITE_PCT) |> arrange(desc(WHITE_PCT))
 ```
 
 
-# Explore district discipline
 ```{r}
 district_discipline_df <- read_csv("../data/discipline-district-2425.csv") |> 
     clean_names("screaming_snake")
@@ -87,7 +83,6 @@ district_discipline_df |> distinct(STUDENTS_ISS) |> arrange(desc(STUDENTS_ISS))
 ```
 
 
-# Explore school discipline
 ```{r}
 school_discipline_df <- read_csv("../data/discipline-school-2425.csv") |> 
     clean_names("screaming_snake")
@@ -111,7 +106,6 @@ school_discipline_df |> distinct(PERCENT_DISCIPLINED) |> arrange(desc(PERCENT_DI
 ```
 
 
-# Explore state chronic absenteeism suppressed
 ```{r}
 state_chronic_absenteeism_suppressed_df <- read_csv("../data/state_chronic_absenteeism_suppressed_2025.csv") |> 
     clean_names("screaming_snake")
@@ -126,7 +120,6 @@ state_chronic_absenteeism_suppressed_df |> distinct(N_CHRONICALLY_ABSENT) |> arr
 ```
 
 
-# Explore district chronic absenteeism suppressed
 ```{r}
 district_chronic_absenteeism_suppressed_df <- read_csv("../data/district_chronic_absenteeism_suppressed_2025.csv") |> 
     clean_names("screaming_snake")
@@ -148,7 +141,6 @@ district_chronic_absenteeism_suppressed_df |> distinct(PCT_CHRONICALLY_ABSENT) |
 ```
 
 
-# Explore school chronic absenteeism suppressed
 ```{r}
 school_chronic_absenteeism_suppressed_df <- read_csv("../data/school_chronic_absenteeism_suppressed_2025.csv") |> 
     clean_names("screaming_snake")
@@ -171,7 +163,7 @@ school_chronic_absenteeism_suppressed_df |> distinct(N_CHRONICALLY_ABSENT) |> ar
 ```
 
 
-# Explore MNPS enrollment data
+# Read and explore MNPS data
 ```{r}
 mnps_enrollment_df <- read_csv("../data/MNPS Enrollment Data 031025.csv") |> 
     clean_names("screaming_snake")
@@ -205,7 +197,6 @@ mnps_enrollment_df |> distinct(BLACK_OR_AFRICAN_AMERICAN) |> arrange(desc(BLACK_
 ```
 
 
-# Explore MNPS behavior data
 ```{r}
 mnps_behavior_df <- read_csv("../data/MNPS Behavior Data 031025.csv") |> 
     clean_names("screaming_snake")
@@ -226,13 +217,10 @@ mnps_behavior_df |> distinct(REMANDMENT, .keep_all = TRUE)
 ```
 
 
-# Explore MNPS attendance data
 ```{r}
-# Read data
 mnps_attendance_df <- read_csv("../data/MNPS Attendance Data 031025.csv") |> 
     clean_names("screaming_snake")
 
-# View summary
 mnps_attendance_df |> summary()
 ```
 
@@ -256,7 +244,6 @@ mnps_attendance_df |> distinct(CHRONICALLY_ABSENT_PERCENT) |> arrange(desc(CHRON
 
 # Reconcile the total students
 ```{r}
-# Verify the total number of students
 enrollment_total <- mnps_enrollment_df |> 
     summarise(DISTRICT_TOTAL = sum(TOTAL_ENROLLMENT)) |> 
     pull()
@@ -266,7 +253,6 @@ enrollment_total
 
 
 ```{r}
-# Verify the total number of students
 behavior_total <- mnps_behavior_df |> 
     filter(SCHOOL == "*DISTRICT" & SUBGROUP == "Gender") |> 
     summarise(DISTRICT_TOTAL = sum(TOTAL_SUBGROUP_ENROLLMENT)) |> 
@@ -277,7 +263,6 @@ behavior_total
 
 
 ```{r}
-# Verify the total number of students
 attendance_total <- mnps_attendance_df |> 
     filter(SCHOOL_NAME == "*DISTRICT") |> 
     select(ACTIVE_ENROLLMENT) |> 
@@ -287,18 +272,8 @@ attendance_total
 ```
 
 
+# Analysis on MNPS behavior data
 ```{r}
-# Verify the total number of students
-mnps_attendance_df |> 
-    filter(SCHOOL_NAME != "*DISTRICT") |> 
-    summarize(TOTAL_STUDENTS = sum(ACTIVE_ENROLLMENT)) |> 
-    pull()
-```
-
-
-# Work with MNPS behavior data
-```{r}
-# Clean MNPS behavior data
 mnps_behavior_df <- mnps_behavior_df |> 
     # Create new columns for numeric percentages and ignore suppressed values
     mutate(SUSPENSION_PERCENT = if_else(str_detect(SUSPENSION, "<|>"), NA, SUSPENSION), .after = SUSPENSION) |> 
@@ -309,7 +284,7 @@ mnps_behavior_df <- mnps_behavior_df |>
     mutate(EXPULSION_PERCENT = as.double(str_replace(EXPULSION_PERCENT, "%", "")), .after = EXPULSION) |>
     mutate(REMANDMENT_PERCENT = as.double(str_replace(REMANDMENT_PERCENT, "%", "")), .after = REMANDMENT)
     
-mnps_behavior_df
+mnps_behavior_df |> head(5)
 ```
 
 
@@ -318,11 +293,12 @@ mnps_behavior_df
 mnps_suspension_by_gender_display_df <- mnps_behavior_df |> 
     filter(SCHOOL != "*DISTRICT" & SUBGROUP == "Gender")
 
-mnps_suspension_by_gender_display_df
+mnps_suspension_by_gender_display_df |> head(5)
 ```
 
 
 ```{r}
+# Logistic regression: suspension percent is not statistically significant
 mnps_gender_suspension_model <- glm(factor(DATA_VALUE) ~ SUSPENSION_PERCENT, data = mnps_suspension_by_gender_display_df, family = "binomial")
 
 summary(mnps_gender_suspension_model)
@@ -330,13 +306,7 @@ summary(mnps_gender_suspension_model)
 
 
 ```{r}
-mnps_suspension_gender_model <- lm(SUSPENSION_PERCENT ~ DATA_VALUE, data = mnps_suspension_by_gender_display_df)
-
-summary(mnps_suspension_gender_model)
-```
-
-
-```{r}
+# Create tibble for paired t-test
 mnps_suspend_gender_paired_df <- mnps_suspension_by_gender_display_df |> 
     select(SCHOOL, DATA_VALUE, SUSPENSION_PERCENT) |> 
     pivot_wider(
@@ -344,22 +314,17 @@ mnps_suspend_gender_paired_df <- mnps_suspension_by_gender_display_df |>
         values_from = SUSPENSION_PERCENT
     )
 
-mnps_suspend_gender_paired_df
+mnps_suspend_gender_paired_df |> head(5)
 ```
 
 
 ```{r}
+# t-test: suspension percent is statistically significant
 t.test(
     x = mnps_suspend_gender_paired_df$MALE,
     y = mnps_suspend_gender_paired_df$FEMALE,
     paired = TRUE
 )
-```
-
-
-
-```{r}
-t.test(SUSPENSION_PERCENT ~ DATA_VALUE, data = mnps_suspension_by_gender_display_df)
 ```
 
 
@@ -372,18 +337,13 @@ mnps_suspension_by_gender_df <- mnps_behavior_df |>
         GENDER = DATA_VALUE,
         TOTAL_ENROLLMENT = TOTAL_SUBGROUP_ENROLLMENT
     )
-# |>
-#     pivot_longer(
-#         cols = c(TOTAL_ENROLLMENT, SUSPENSION_COUNT),
-#         names_to = "COUNT_TYPE",
-#         values_to = "COUNT"
-#     )
     
-mnps_suspension_by_gender_df
+mnps_suspension_by_gender_df |> head(5)
 ```
 
 
 ```{r}
+# Experiment with cbind
 t.test(cbind(SUSPENSION_COUNT, TOTAL_ENROLLMENT - SUSPENSION_COUNT) ~ GENDER, data = mnps_suspension_by_gender_df)
 ```
 
@@ -458,7 +418,48 @@ ggsave(
 ```
 
 
-# Work with MNPS attendance data
+```{r}
+mnps_suspension_by_gender_box_plot <- mnps_behavior_df |> 
+    # Create tibble for suspension by gender
+    filter(SUBGROUP == "Gender") |>
+    # Create column for calculated number of students suspended
+    rename(GENDER = DATA_VALUE) |>
+    # Create a plot
+    ggplot(
+        aes(
+            x = GENDER,
+            y = SUSPENSION_PERCENT,
+            color = GENDER
+        )
+    ) +
+    # Create boxplot
+    geom_boxplot() +
+    # Format labels
+    labs(
+        title = "Suspension by Gender",
+        subtitle = "MNPS District",
+        x = "Gender",
+        y = "Suspension Percent",
+        color = NULL
+    )
+
+mnps_suspension_by_gender_box_plot
+```
+
+
+```{r}
+# Save the plot
+ggsave(
+    filename = "../plots/mnps_suspension_by_gender_box_plot.png",
+    plot = mnps_suspension_by_gender_box_plot,
+    width = 4,
+    height = 5,
+    dpi = 100
+)
+```
+
+
+# Analysis on MNPS attendance data
 ```{r}
 # Merge gender data with attendance
 # Cannot determine absent rates by gender
@@ -471,11 +472,17 @@ mnps_attendance_df |>
 ```
 
 
-# Work with state chronic absenteeism data
+# Analysis on state chronic absenteeism data
+```{r}
+state_chronic_absenteeism_suppressed_df |> 
+    filter(STUDENT_GROUP %in% c("Male", "Female") & GRADE_BAND == "All Grades")
+```
+
+
+
 ```{r}
 state_chronically_absent_by_gender_plot <- state_chronic_absenteeism_suppressed_df |> 
     # Create a tibble for state absent by gender
-    clean_names("screaming_snake") |> 
     filter(STUDENT_GROUP %in% c("Male", "Female")) |> 
     pivot_longer(
         cols = c(N_STUDENTS, N_CHRONICALLY_ABSENT),
@@ -540,11 +547,11 @@ ggsave(
 ```
 
 
-# Work with district chronic absenteeism data
+# Analysis on district chronic absenteeism data
 ```{r}
+# UNUSABLE GRAPH
 district_chronically_absent_by_gender_plot <- district_chronic_absenteeism_suppressed_df |> 
     # Create tibble for district absent by gender
-    clean_names("screaming_snake") |> 
     filter(STUDENT_GROUP %in% c("Male", "Female") & GRADE_BAND == "All Grades") |> 
     mutate(
         CHRONICALLY_ABSENT_COUNT = if_else(
@@ -631,7 +638,6 @@ ggsave(
 
 # Group data by region
 ```{r}
-# Read region data
 region_df <- bind_rows(
     list(
         read_csv("../data/tnsd_east_region.csv"),
@@ -643,8 +649,7 @@ region_df <- bind_rows(
         read_csv("../data/tnsd_southwest_region.csv"),
         read_csv("../data/tnsd_uppercumberland_region.csv")
     )
-) |> 
-    clean_names("screaming_snake")
+) |> clean_names("screaming_snake")
 
 region_df
 ```
@@ -663,6 +668,7 @@ region_district_absenteeism_df
 
 
 ```{r}
+# Plot region chronic absenteeism by gender
 region_district_absenteeism_plot <- region_district_absenteeism_df |> 
     mutate(
         ABSENT_COUNT = if_else(
@@ -735,7 +741,7 @@ ggsave(
 ```
 
 
-# Work with school chronic absenteeism data
+# Analysis on school chronic absenteeism data
 ```{r}
 # Clean tibble to model data
 school_absent_df <- school_chronic_absenteeism_suppressed_df |> 
@@ -758,7 +764,7 @@ school_absent_df <- school_chronic_absenteeism_suppressed_df |>
     filter(STUDENT_GROUP %in% c("Male", "Female")) |> 
     select(SYSTEM_NAME, SCHOOL_NAME, STUDENT_GROUP, N_STUDENTS, ABSENT_COUNT, ABSENT_PERCENT)
 
-school_absent_df
+school_absent_df |> head(5)
 ```
 
 
@@ -771,17 +777,9 @@ summary(school_absent_model)
 
 
 ```{r}
-# Linear regression: student group is not statistically significant
-school_absent_linear = lm(ABSENT_PERCENT ~ STUDENT_GROUP, data = school_absent_df)
-
-school_absent_linear |> summary()
-```
-
-
-```{r}
 school_absent_df |> 
-    ggplot(aes(x = N_STUDENTS, y = ABSENT_PERCENT, color = STUDENT_GROUP, alpha = 0.5)) +
-    geom_point(position = position_jitter())
+    ggplot(aes(x = N_STUDENTS, y = ABSENT_PERCENT, color = STUDENT_GROUP)) +
+    geom_point()
 ```
 
 
@@ -908,9 +906,54 @@ summary(mnps_absent_gender_model)
 
 
 ```{r}
-mnps_absent_df |> 
+mnps_absent_point_plot <- mnps_absent_df |> 
     ggplot(aes(x = ABSENT_PERCENT, y = N_STUDENTS, color = STUDENT_GROUP)) +
-    geom_point()
+    geom_point() +
+    labs(title = "Chronic Absenteeism by Gender",
+         subtitle = "MNPS District",
+         x = "Absent Percentage",
+         y = "Total Students Per School",
+         color = NULL)
+
+mnps_absent_point_plot
+```
+
+
+```{r}
+# Save the plot
+ggsave(
+    filename = "../plots/mnps_absent_point_plot.png",
+    plot = mnps_absent_point_plot,
+    width = 5,
+    height = 4,
+    dpi = 100
+)
+```
+
+
+```{r}
+mnps_absent_box_plot <- mnps_absent_df |> 
+    ggplot(aes(x = STUDENT_GROUP, y = ABSENT_PERCENT, color = STUDENT_GROUP)) +
+    geom_boxplot() +
+    labs(title = "Chronic Absenteeism by Gender",
+         subtitle = "MNPS District",
+         x = "Gender",
+         y = "Absent Percentage",
+         color = NULL)
+
+mnps_absent_box_plot
+```
+
+
+```{r}
+# Save the plot
+ggsave(
+    filename = "../plots/mnps_absent_box_plot.png",
+    plot = mnps_absent_box_plot,
+    width = 4,
+    height = 5,
+    dpi = 100
+)
 ```
 
 
@@ -1026,7 +1069,6 @@ mnps_absent_df |>
     mutate(ABSENT_PERCENT = round(ABSENT_COUNT / N_STUDENTS * 100, digit = 1)) |>
     full_join(
         mnps_absent_df
-    ) #|>
-    # arrange(SCHOOL_NAME)
+    )
 ```
 
