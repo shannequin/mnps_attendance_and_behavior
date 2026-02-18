@@ -1,3 +1,4 @@
+library(rsconnect)
 library(shiny)
 library(bslib)
 library(DT)
@@ -5,19 +6,19 @@ library(tidyverse)
 library(janitor) # Cleans names of a data.frame
 library(glue)
 
-mnps_enrollment_df <- read_csv("../data/MNPS Enrollment Data 031025.csv") |> clean_names("screaming_snake")
-mnps_behavior_df <- read_csv("../data/MNPS Behavior Data 031025.csv") |> clean_names("screaming_snake")
-school_absent_df <- read_csv("../data/school_chronic_absenteeism_suppressed_2025.csv") |> clean_names("screaming_snake")
+mnps_enrollment_df <- read_csv("data/MNPS Enrollment Data 031025.csv") |> clean_names("screaming_snake")
+mnps_behavior_df <- read_csv("data/MNPS Behavior Data 031025.csv") |> clean_names("screaming_snake")
+school_absent_df <- read_csv("data/school_chronic_absenteeism_suppressed_2025.csv") |> clean_names("screaming_snake")
 region_df <- bind_rows(
     list(
-        read_csv("../data/tnsd_east_region.csv"),
-        read_csv("../data/tnsd_first_region.csv"),
-        read_csv("../data/tnsd_midcumberland_region.csv"),
-        read_csv("../data/tnsd_northwest_region.csv"),
-        read_csv("../data/tnsd_southcentral_region.csv"),
-        read_csv("../data/tnsd_southeast_region.csv"),
-        read_csv("../data/tnsd_southwest_region.csv"),
-        read_csv("../data/tnsd_uppercumberland_region.csv")
+        read_csv("data/tnsd_east_region.csv"),
+        read_csv("data/tnsd_first_region.csv"),
+        read_csv("data/tnsd_midcumberland_region.csv"),
+        read_csv("data/tnsd_northwest_region.csv"),
+        read_csv("data/tnsd_southcentral_region.csv"),
+        read_csv("data/tnsd_southeast_region.csv"),
+        read_csv("data/tnsd_southwest_region.csv"),
+        read_csv("data/tnsd_uppercumberland_region.csv")
     )
 ) |> clean_names("screaming_snake")
 
