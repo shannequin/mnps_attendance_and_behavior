@@ -1,0 +1,104 @@
+---
+title: "suspension_analysis"
+output: html_document
+---
+
+
+```{r}
+library(tidyverse)
+library(janitor)
+```
+
+
+```{r}
+mnps_behavior_df <- read_csv("../data/MNPS Behavior Data 031025.csv") |> clean_names("screaming_snake")
+
+mnps_behavior_df |> summary()
+```
+
+
+```{r}
+mnps_behavior_df
+```
+
+
+# Clean and format data
+```{r}
+mnps_behavior_fmt_df <- mnps_behavior_df |> 
+    filter(SUBGROUP == "Gender" & SCHOOL != "*DISTRICT") |> 
+    select(SCHOOL, TOTAL_SUBGROUP_ENROLLMENT, DATA_VALUE, SUSPENSION) |> 
+    rename(TOTAL_SUBGROUP = TOTAL_SUBGROUP_ENROLLMENT, GENDER = DATA_VALUE) |> 
+    # Convert NA values to 0
+    mutate(SUSPENSION = if_else(is.na(SUSPENSION), "0", SUSPENSION)) |>
+    # Convert supressed values to NA
+    mutate(SUSPENSION = if_else(str_detect(SUSPENSION, "<|>"), NA, SUSPENSION), .after = SUSPENSION) |>
+    # Convert string to double
+    mutate(SUSPENSION_PERCENT = as.double(str_replace(SUSPENSION, "%", "")), .after = SUSPENSION) |>
+    select(!SUSPENSION) |> 
+    pivot_wider(
+        names_from = GENDER,
+        names_glue = "{GENDER}_{.value}",
+        values_from = c(TOTAL_SUBGROUP, SUSPENSION_PERCENT)
+    ) |>
+    drop_na()
+
+mnps_behavior_fmt_df
+```
+
+# Paried t-test
+```{r}
+t.test(
+    x = mnps_behavior_fmt_df$MALE_SUSPENSION_PERCENT,
+    y = mnps_behavior_fmt_df$FEMALE_SUSPENSION_PERCENT,
+    paired = TRUE
+)
+```
+
+
+# Analysis
+After cleaning and formattng the dataset, there are 74 schools with paired data for suspension percent by gender.
+The p-value is less than 0.05, so we can reject the null hypothesis.
+It is 95% confident that the true difference is between 1.054% and 2.432%.
+On average, male students have a 1.743% higher suspension rate than females.
+
+
+# Chi-squared test
+```{r}
+mnps_behavior_fmt_df |> 
+    mutate(MALE_SUSPENDED = round(MALE_TOTAL_SUBGROUP * MALE_SUSPENSION_PERCENT / 100)) |> 
+    mutate(MALE_NOT_SUSPENDED = MALE_TOTAL_SUBGROUP - MALE_SUSPENDED) |> 
+    mutate(FEMALE_SUSPENDED = round(FEMALE_TOTAL_SUBGROUP * FEMALE_SUSPENSION_PERCENT / 100)) |> 
+    mutate(FEMALE_NOT_SUSPENDED = FEMALE_TOTAL_SUBGROUP - FEMALE_SUSPENDED) |> 
+    summarise(sum(MALE_SUSPENDED), sum(MALE_NOT_SUSPENDED), sum(FEMALE_SUSPENDED), sum(FEMALE_NOT_SUSPENDED)) |> 
+    rename(
+        MALE_SUSPENDED = `sum(MALE_SUSPENDED)`,
+        FEMALE_SUSPENDED = `sum(FEMALE_SUSPENDED)`,
+        MALE_NOT_SUSPENDED = `sum(MALE_NOT_SUSPENDED)`,
+        FEMALE_NOT_SUSPENDED = `sum(FEMALE_NOT_SUSPENDED)`
+   ) |> 
+    pivot_longer(
+        cols = everything(),
+        names_to = c("GENDER", "STATUS"),
+        names_sep = "_"
+    ) |> 
+    pivot_wider(
+        names_from = STATUS,
+        values_from = value
+    )
+
+```
+
+
+```{r}
+mnps_behavior_df |> 
+    filter(SCHOOL == "*DISTRICT" & SUBGROUP == "Gender") |> 
+    mutate(SUSPENSION = as.double(str_replace(SUSPENSION, "%", "")), .after = SUSPENSION) |>
+    mutate(SUSPENSION_COUNT = round(TOTAL_SUBGROUP_ENROLLMENT * SUSPENSION / 100)) |> 
+    select(DATA_VALUE, TOTAL_SUBGROUP_ENROLLMENT, SUSPENSION_COUNT) |> 
+    mutate(NOT_SUSPENDED = TOTAL_SUBGROUP_ENROLLMENT - SUSPENSION_COUNT) |> 
+    select(!TOTAL_SUBGROUP_ENROLLMENT)
+```
+
+# Discrepancy between totals
+There is a discrepancy between the district total number of students and the aggregated count
+

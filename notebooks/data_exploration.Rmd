@@ -453,7 +453,7 @@ ggsave(
     filename = "../plots/mnps_suspension_by_gender_box_plot.png",
     plot = mnps_suspension_by_gender_box_plot,
     width = 4,
-    height = 5,
+    height = 4,
     dpi = 100
 )
 ```
@@ -654,7 +654,7 @@ region_df <- bind_rows(
 region_df
 ```
 
-
+# CHECK FEMALE NORTHWEST TENNESSEE REGION
 ```{r}
 # Merge district absenteeism with region data
 region_district_absenteeism_df <- district_chronic_absenteeism_suppressed_df |> 
@@ -665,6 +665,20 @@ region_district_absenteeism_df <- district_chronic_absenteeism_suppressed_df |>
 
 region_district_absenteeism_df
 ```
+
+
+```{r}
+region_district_absenteeism_df |> 
+    filter(!is.na(REGION_NAME) & STUDENT_GROUP %in% c("Male", "Female") & GRADE_BAND == "All Grades") |> 
+    select(REGION_NAME, SYSTEM_NAME, STUDENT_GROUP, PCT_CHRONICALLY_ABSENT) |> 
+    pivot_wider(
+        names_from = STUDENT_GROUP,
+        values_from = PCT_CHRONICALLY_ABSENT
+    ) |> 
+    drop_na()
+    
+```
+
 
 
 ```{r}
@@ -791,7 +805,7 @@ region_school_absenteeism_df <- school_absent_df |>
         by = join_by(SYSTEM_NAME == DISTRICT)
     )
 
-region_school_absenteeism_df
+region_school_absenteeism_df |> filter(REGION_NAME == "Northwest Tennessee")
 ```
 
 
