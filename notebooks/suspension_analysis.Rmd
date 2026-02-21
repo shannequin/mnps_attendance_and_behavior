@@ -7,6 +7,7 @@ output: html_document
 ```{r}
 library(tidyverse)
 library(janitor)
+library(scales)
 ```
 
 
@@ -22,15 +23,13 @@ mnps_behavior_df
 ```
 
 
-# Clean and format data
+# Clean and format data for t-test
 ```{r}
 mnps_behavior_fmt_df <- mnps_behavior_df |> 
     filter(SUBGROUP == "Gender" & SCHOOL != "*DISTRICT") |> 
     select(SCHOOL, TOTAL_SUBGROUP_ENROLLMENT, DATA_VALUE, SUSPENSION) |> 
     rename(TOTAL_SUBGROUP = TOTAL_SUBGROUP_ENROLLMENT, GENDER = DATA_VALUE) |> 
-    # Convert NA values to 0
-    mutate(SUSPENSION = if_else(is.na(SUSPENSION), "0", SUSPENSION)) |>
-    # Convert supressed values to NA
+    # Convert suppressed values to NA
     mutate(SUSPENSION = if_else(str_detect(SUSPENSION, "<|>"), NA, SUSPENSION), .after = SUSPENSION) |>
     # Convert string to double
     mutate(SUSPENSION_PERCENT = as.double(str_replace(SUSPENSION, "%", "")), .after = SUSPENSION) |>
@@ -56,15 +55,16 @@ t.test(
 
 
 # Analysis
-After cleaning and formattng the dataset, there are 74 schools with paired data for suspension percent by gender.
+After cleaning and formattng the dataset, there are 42 schools with paired data for suspension percent by gender.
 The p-value is less than 0.05, so we can reject the null hypothesis.
-It is 95% confident that the true difference is between 1.054% and 2.432%.
-On average, male students have a 1.743% higher suspension rate than females.
+It is 95% confident that the true difference is between 2.012% and 4.131%.
+On average, male students have a 3.0714% higher suspension rate than females.
 
 
-# Chi-squared test
+# Clean and format data for Chi-squared test
 ```{r}
-mnps_behavior_fmt_df |> 
+# Tibble from aggregated data
+mnps_behavior_aggr_df <- mnps_behavior_fmt_df |> 
     mutate(MALE_SUSPENDED = round(MALE_TOTAL_SUBGROUP * MALE_SUSPENSION_PERCENT / 100)) |> 
     mutate(MALE_NOT_SUSPENDED = MALE_TOTAL_SUBGROUP - MALE_SUSPENDED) |> 
     mutate(FEMALE_SUSPENDED = round(FEMALE_TOTAL_SUBGROUP * FEMALE_SUSPENSION_PERCENT / 100)) |> 
@@ -86,19 +86,102 @@ mnps_behavior_fmt_df |>
         values_from = value
     )
 
+mnps_behavior_aggr_df
 ```
 
 
 ```{r}
-mnps_behavior_df |> 
+# Tibble from district rows
+mnps_behavior_district_df <- mnps_behavior_df |> 
     filter(SCHOOL == "*DISTRICT" & SUBGROUP == "Gender") |> 
     mutate(SUSPENSION = as.double(str_replace(SUSPENSION, "%", "")), .after = SUSPENSION) |>
     mutate(SUSPENSION_COUNT = round(TOTAL_SUBGROUP_ENROLLMENT * SUSPENSION / 100)) |> 
     select(DATA_VALUE, TOTAL_SUBGROUP_ENROLLMENT, SUSPENSION_COUNT) |> 
     mutate(NOT_SUSPENDED = TOTAL_SUBGROUP_ENROLLMENT - SUSPENSION_COUNT) |> 
     select(!TOTAL_SUBGROUP_ENROLLMENT)
+
+mnps_behavior_district_df
 ```
 
-# Discrepancy between totals
-There is a discrepancy between the district total number of students and the aggregated count
 
+# Chi-squared test
+```{r}
+mnps_behavior_aggr_df |> 
+    select(!GENDER) |> 
+    chisq.test()
+```
+
+
+```{r}
+mnps_behavior_district_df |> 
+    select(!DATA_VALUE) |> 
+    chisq.test()
+```
+
+
+# Create plot
+```{r}
+mnps_behavior_district_plot <- mnps_behavior_df |> 
+    filter(SCHOOL == "*DISTRICT" & SUBGROUP == "Gender") |>
+    select(TOTAL_SUBGROUP_ENROLLMENT, DATA_VALUE, SUSPENSION) |> 
+    rename(TOTAL_STUDENTS = TOTAL_SUBGROUP_ENROLLMENT, GENDER = DATA_VALUE) |> 
+    mutate(SUSPENSION_PERCENT = as.double(str_replace(SUSPENSION, "%", "")), .after = SUSPENSION) |> 
+    mutate(SUSPENSION_COUNT = round(TOTAL_STUDENTS * SUSPENSION_PERCENT / 100)) |> 
+    mutate(NOT_SUSPENDED = TOTAL_STUDENTS - SUSPENSION_COUNT) |> 
+    # Move TOTAL_ENROLLMENT and SUSPENSION_COUNT to COUNT_TYPE column
+    pivot_longer(
+        cols = c(TOTAL_STUDENTS, SUSPENSION_COUNT),
+        names_to = "COUNT_TYPE",
+        values_to = "COUNT"
+    ) |> 
+    # Create a plot
+    ggplot(
+        aes(
+            x = GENDER,
+            y = COUNT,
+            fill = COUNT_TYPE,
+            label = case_match(
+                COUNT_TYPE,
+                "SUSPENSION_COUNT" ~ SUSPENSION,
+                "TOTAL_STUDENTS" ~ as.character(COUNT)
+            )
+        )
+    ) +
+    # Create bar graph with info layered in front of each other
+    geom_col(position = "identity") +
+    # Format labels
+    labs(
+        title = "Suspension by Gender",
+        subtitle = "MNPS District",
+        x = "Gender",
+        y = "Number of Students",
+        fill = NULL
+    ) +
+    # Format y-axis ticks
+    scale_y_continuous(labels = label_comma()) +
+    # Format fill
+    scale_fill_hue(
+        labels = c("SUSPENSION_COUNT" = "Suspended Students", "TOTAL_STUDENTS" = "Total Students"),
+        guide = guide_legend(reverse = TRUE)
+    ) +
+    # Format legend labels
+    geom_label(
+        colour = "white",
+        fontface = "bold",
+        key_glyph = draw_key_rect
+    )
+
+mnps_behavior_district_plot
+```
+
+
+```{r}
+# Save the plot
+ggsave(
+    filename = "../plots/mnps_behavior_district_plot.png",
+    plot = mnps_behavior_district_plot,
+    width = 5,
+    height = 4,
+    dpi = 100
+)
+```

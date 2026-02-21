@@ -1,128 +1,127 @@
-#
-# This is the server logic of a Shiny web application. You can run the
-# application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
-
-
 function(input, output, session) {
     
-    output$display_table <- renderDT({
+    # FIRST TAB: Info about the dataset selected
+    output$info_text <- renderText({
         
-        if (input$area_input == "Metro Nashville Public Schools") {
+        suspension_2425_all <- paste(
+            "The dataset used is displayed in the Raw Data tab.",
+            "The graph is based on the School *DISTRICT observations which will not match up with the cleaned data counts.",
+            "The Table contains only the data with matched pairs of M/F students after removing the suppressed observations.",
+            sep = "<br><br>"
+        )
+
+        if (input$incident_input == "Suspensions") {
             
-            subgroup_column_name <- str_to_upper(str_replace_all(input$subgroup_input, " ", "_"))
+            HTML(
+                case_match(
+                    input$gender_input,
+                    "All" ~ suspension_2425_all,
+                    "Male" ~ "Male suspension info",
+                    "Female" ~ "Female suspension info",
+                    "Non-binary" ~ "No data :("
+                )
+            )
             
-            if (input$behavior_input == "Suspension") {
-                mnps_behavior_df |>
-                    filter(SUBGROUP == input$subgroup_input) |>
-                    select(SCHOOL, DATA_VALUE, TOTAL_SUBGROUP_ENROLLMENT, SUSPENSION) |>
-                    rename(TOTAL_STUDENTS = TOTAL_SUBGROUP_ENROLLMENT, !!subgroup_column_name := DATA_VALUE)
-            } else if (input$behavior_input == "Chronic Absenteeism") {
-                mnps_absent_df |> 
-                    group_by(STUDENT_GROUP) |> 
-                    summarise(
-                        TOTAL_STUDENTS = sum(N_STUDENTS),
-                        TOTAL_ABSENT = sum(ABSENT_COUNT, na.rm = TRUE)
-                    )
-                
-                mnps_absent_df |> 
-                    mutate(ABSENTEEISM = str_c(ABSENT_PERCENT, "%")) |> 
-                    select(SCHOOL_NAME, STUDENT_GROUP, N_STUDENTS, ABSENTEEISM) |> 
-                    rename(SCHOOL = SCHOOL_NAME, !!subgroup_column_name := STUDENT_GROUP, TOTAL_STUDENTS = N_STUDENTS)
-            }
-        } else if (input$area_input == "State of TN") {
-            if (input$behavior_input == "Suspension") {
-                NA
-            } else if (input$behavior_input == "Chronic Absenteeism") {
-                school_absent_df
-            }
+        } else if (input$incident_input == "Chronic Abesnteeims") {
+            
+            HTML(
+                case_match(
+                    input$gender_input,
+                    "All" ~ "All chronic absenteeism info",
+                    "Male" ~ "Male chronic absenteeism info",
+                    "Female" ~ "Female chronic absenteeism info",
+                    "Non-binary" ~ "No data :("
+                )
+            )
         }
     })
     
+    # SECOND TAB: Graph the data
     output$display_graph <- renderPlot({
         
-        subgroup_column_name <- str_to_upper(str_replace_all(input$subgroup_input, " ", "_"))
-        
-        if (input$area_input == "Metro Nashville Public Schools") {
-            if (input$behavior_input == "Suspension") {
-                mnps_behavior_df |>
-                    filter(SCHOOL == "*DISTRICT" & SUBGROUP == input$subgroup_input) |>
-                    # Create column for calculated number of students suspended
-                    mutate(SUSPENSION_COUNT = round(TOTAL_SUBGROUP_ENROLLMENT * SUSPENSION_PERCENT / 100)) |>
-                    select(DATA_VALUE, TOTAL_SUBGROUP_ENROLLMENT, SUSPENSION, SUSPENSION_COUNT) |>
-                    rename(!!subgroup_column_name := DATA_VALUE, TOTAL_ENROLLMENT = TOTAL_SUBGROUP_ENROLLMENT) |>
-                    # Move TOTAL_ENROLLMENT and SUSPENSION_COUNT to COUNT_TYPE column
-                    pivot_longer(cols = c(TOTAL_ENROLLMENT, SUSPENSION_COUNT),
-                                 names_to = "COUNT_TYPE",
-                                 values_to = "COUNT") |>
-                    ggplot(aes(x = .data[[subgroup_column_name]],
-                               y = COUNT,
-                               fill = COUNT_TYPE,
-                               label = case_match(COUNT_TYPE,
-                                                  "SUSPENSION_COUNT" ~ SUSPENSION,
-                                                  "TOTAL_ENROLLMENT" ~ as.character(COUNT))
-                    )) +
-                    # Layer cols in front of each other
-                    geom_col(position = "identity") +
-                    labs(title = glue("Suspension by ", input$subgroup_input),
-                         #      subtitle = "MNPS District",
-                         x = input$subgroup_input,
-                         y = "Number of Students",
-                         fill = NULL) +
-                    scale_fill_hue(labels = c("SUSPENSION_COUNT" = "Suspended Students",
-                                              "TOTAL_ENROLLMENT" = "Total Students"),
-                                   guide = guide_legend(reverse = TRUE)) + # Reverse order of legend labels
-                    # Display geom labels
-                    geom_label(colour = "white",
-                               fontface = "bold",
-                               key_glyph = draw_key_rect)
-            } else if (input$behavior_input == "Chronic Absenteeism") {
-                mnps_absent_df |>
-                    group_by(STUDENT_GROUP) |> 
-                    summarise(
-                        TOTAL_STUDENTS = sum(N_STUDENTS),
-                        TOTAL_ABSENT = sum(ABSENT_COUNT, na.rm = TRUE)
-                    ) |> 
-                    mutate(ABSENT_PERCENT = str_c(as.character(round(TOTAL_ABSENT / TOTAL_STUDENTS * 100, digit = 1)), "%")) |> 
+        if (input$year_input == "2024-2025" & input$incident_input == "Suspensions") {
+            
+            if (input$gender_input == "All") {
+                
+                mnps_behavior_2425_df |> 
+                    filter(SCHOOL == "*DISTRICT") |>
+                    mutate(SUSPENSION_PERCENT = as.double(str_replace(SUSPENSION, "%", "")), .after = SUSPENSION) |> 
+                    mutate(SUSPENSION_COUNT = round(TOTAL_STUDENTS * SUSPENSION_PERCENT / 100)) |> 
                     pivot_longer(
-                        cols = c(TOTAL_STUDENTS, TOTAL_ABSENT),
+                        cols = c(TOTAL_STUDENTS, SUSPENSION_COUNT),
                         names_to = "COUNT_TYPE",
                         values_to = "COUNT"
                     ) |> 
+                    # Create a plot
                     ggplot(
                         aes(
-                            x = STUDENT_GROUP,
+                            x = GENDER,
                             y = COUNT,
                             fill = COUNT_TYPE,
-                            label = case_match(COUNT_TYPE,
-                                               "TOTAL_ABSENT" ~ ABSENT_PERCENT,
-                                               "TOTAL_STUDENTS" ~ as.character(COUNT))
+                            label = case_match(
+                                COUNT_TYPE,
+                                "SUSPENSION_COUNT" ~ SUSPENSION,
+                                "TOTAL_STUDENTS" ~ as.character(COUNT)
+                            )
                         )
                     ) +
+                    # Create bar graph with info layered in front of each other
                     geom_col(position = "identity") +
-                    labs(title = glue("Chronic Absenteeism by ", input$subgroup_input),
-                         x = input$subgroup_input,
-                         y = "Number of Students",
-                         fill = NULL) +
-                    scale_fill_hue(labels = c("TOTAL_ABSENT" = "Absent Students",
-                                              "TOTAL_STUDENTS" = "Total Students"),
-                                   # Reverse order of legend labels
-                                   guide = guide_legend(reverse = TRUE)) +
-                    # Display geom labels
-                    geom_label(colour = "white",
-                               fontface = "bold",
-                               key_glyph = draw_key_rect)
-            }
-        } else if (input$area_input == "State of TN") {
-            if (input$behavior_input == "Suspension") {
-                NA
-            } else if (input$behavior_input == "Chronic Absenteeism") {
-                school_absent_df |> ggplot(aes()) + geom_col()
+                    # Format labels
+                    labs(
+                        title = "Suspension by Gender",
+                        subtitle = "MNPS District",
+                        x = "Gender",
+                        y = "Number of Students",
+                        fill = NULL
+                    ) +
+                    # Format y-axis ticks
+                    scale_y_continuous(labels = label_comma()) +
+                    # Format fill
+                    scale_fill_hue(
+                        labels = c("SUSPENSION_COUNT" = "Suspended Students", "TOTAL_STUDENTS" = "Total Students"),
+                        guide = guide_legend(reverse = TRUE)
+                    ) +
+                    # Format legend labels
+                    geom_label(
+                        colour = "white",
+                        fontface = "bold",
+                        key_glyph = draw_key_rect
+                    )
             }
         }
     })
+    
+    # THIRD TAB: Formatted data table
+    output$display_table <- renderDT({
+        
+        if (input$year_input == "2024-2025" & input$incident_input == "Suspensions") {
+            
+            if (input$gender_input == "All") {
+
+                mnps_behavior_2425_df |> 
+                    filter(SCHOOL != "*DISTRICT") |> 
+                    mutate(SUSPENSION = if_else(str_detect(SUSPENSION, "<|>"), NA, SUSPENSION)) |>
+                    mutate(SUSPENSION_PERCENT = as.double(str_replace(SUSPENSION, "%", "")), .after = SUSPENSION) |> 
+                    mutate(SUSPENSION_COUNT = round(TOTAL_STUDENTS * SUSPENSION_PERCENT / 100), .after = SUSPENSION_PERCENT) |>
+                    mutate(NON_SUSPENSION_COUNT = TOTAL_STUDENTS - SUSPENSION_COUNT, .after = SUSPENSION_COUNT) |>
+                    pivot_wider(
+                        names_from = GENDER,
+                        names_glue = "{GENDER}_{.value}",
+                        values_from = c(TOTAL_STUDENTS, SUSPENSION, SUSPENSION_PERCENT, SUSPENSION_COUNT, NON_SUSPENSION_COUNT)
+                    ) |> 
+                    drop_na()
+            }
+        }
+    })
+    
+    # FOURTH TAB: Raw dataset
+    output$raw_table <- renderDT({
+        
+        if (input$year_input == "2024-2025" & input$incident_input == "Suspensions") {
+            mnps_behavior_2425_df
+        }
+        
+    })
+    
 }
